@@ -1,12 +1,12 @@
-use anyhow::Result;
 use std::path::Path;
+
+use color_eyre::eyre::{Result, bail};
 use v_utils::macros::MyConfigPrimitives;
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {}
 
 impl AppConfig {
-	//TODO!!!: figure out how to return error iff all potentail sources combined fail to provide all of the values;
 	pub fn read(path: &Path) -> Result<Self> {
 		match path.exists() {
 			true => {
@@ -14,7 +14,7 @@ impl AppConfig {
 				let raw: config::Config = builder.build()?;
 				Ok(raw.try_deserialize()?)
 			}
-			false => Err(anyhow::anyhow!("Config file does not exist: {:?}", path)),
+			false => bail!("Config file does not exist: {:?}", path),
 		}
 	}
 }
