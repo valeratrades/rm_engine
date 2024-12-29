@@ -2,9 +2,7 @@ use color_eyre::eyre::Result;
 use v_utils::macros::MyConfigPrimitives;
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct AppConfig {
-	test: String,
-}
+pub struct AppConfig {}
 
 impl AppConfig {
 	pub fn read() -> Result<Self> {
