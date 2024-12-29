@@ -1,5 +1,4 @@
 use clap::{Args, Parser, Subcommand};
-use v_utils::io::ExpandedPath;
 pub mod config;
 use config::AppConfig;
 
@@ -8,8 +7,6 @@ use config::AppConfig;
 struct Cli {
 	#[command(subcommand)]
 	command: Commands,
-	#[arg(long, default_value = "~/.config/rm_engine.toml")]
-	config: ExpandedPath,
 }
 #[derive(Subcommand)]
 enum Commands {
@@ -28,7 +25,7 @@ struct StartArgs {
 
 fn main() {
 	let cli = Cli::parse();
-	let config = match AppConfig::read(&cli.config.0) {
+	let config = match AppConfig::read() {
 		Ok(config) => config,
 		Err(e) => {
 			eprintln!("Error reading config: {e}");
@@ -41,6 +38,7 @@ fn main() {
 }
 
 fn start(config: AppConfig, args: StartArgs) {
+	dbg!(&config);
 	let message = format!("Hello, {}", args.arg);
 	println!("{message}");
 }
