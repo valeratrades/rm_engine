@@ -817,6 +817,7 @@ dependencies = [
  "color-eyre",
  "config",
  "derive-new",
+ "serde",
  "v_utils",
 ]
 

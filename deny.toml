@@ -51,4 +51,3 @@ unknown-git = "deny"
 
 [sources.allow-org]
 github = ["valeratrades"]
-
