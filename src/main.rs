@@ -1,12 +1,15 @@
 use clap::{Args, Parser, Subcommand};
 pub mod config;
 use config::AppConfig;
+use v_utils::io::ExpandedPath;
 
 #[derive(Parser, Default)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
 	#[command(subcommand)]
 	command: Commands,
+	#[arg(long)]
+	config: Option<ExpandedPath>,
 }
 #[derive(Subcommand)]
 enum Commands {
@@ -25,7 +28,7 @@ struct StartArgs {
 
 fn main() {
 	let cli = Cli::parse();
-	let config = match AppConfig::read() {
+	let config = match AppConfig::read(cli.config) {
 		Ok(config) => config,
 		Err(e) => {
 			eprintln!("Error reading config: {e}");
