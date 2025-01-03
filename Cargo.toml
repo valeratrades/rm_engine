@@ -22,4 +22,4 @@ color-eyre = "^0.6.3"
 config = { version = "^0.15.4" }
 derive-new = "^0"
 serde = { version = "1.0.217", features = ["derive"] }
-v_utils = { version = "^2.0.0", path = "/home/v/s/v_utils/v_utils", features = ["io", "macros"] } #ga: rm path
+v_utils = { features = ["io", "macros"], path = "/home/v/s/v_utils/v_utils", version = "^2.0.0" } #ga: rm path
