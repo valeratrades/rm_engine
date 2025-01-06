@@ -6,7 +6,8 @@ use v_utils::{
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {
-	pub base_intraday_percent_balance_sizing: Percent,
+	pub base_intraday_size_percent_balance: Percent,
+	pub default_sl: Option<Percent>,
 	pub binance: BinanceConfig,
 	pub bybit: BybitConfig,
 }
