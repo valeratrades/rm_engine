@@ -4,8 +4,8 @@ use config::AppConfig;
 use std::env;
 use v_utils::io::ExpandedPath;
 use v_exchanges::{binance::Binance, core::Exchange};
-use v_exchanges::adapters::binance::BinanceOption;
-use v_exchanges::{bybit::Bybit};
+use v_exchanges::adapters::{binance::BinanceOption, bybit::BybitOption};
+use v_exchanges::bybit::Bybit;
 
 
 #[derive(Parser, Default)]
@@ -48,27 +48,30 @@ async fn main() {
 
 async fn start(config: AppConfig, args: StartArgs) {
 	let mut bn = Binance::default();
-	let total_balance = request_total_balance(&mut bn).await;
+	let mut bb = Bybit::default();
+	let total_balance = request_total_balance(&mut bn, &mut bb).await;
 	let price = bn.futures_price(("BTC", "USDT").into()).await.unwrap();
 
 	dbg!(&price, &total_balance);
 }
 
-async  fn request_total_balance(bn: &mut Binance) -> f64 {
+async  fn request_total_balance(bn: &mut Binance, bb: &mut Bybit) -> f64 {
 	let key = env::var("BINANCE_TIGER_READ_KEY").unwrap();
 	let secret = env::var("BINANCE_TIGER_READ_SECRET").unwrap();
 	bn.update_default_option(BinanceOption::Key(key));
 	bn.update_default_option(BinanceOption::Secret(secret));
 
+	let key = env::var("BYBIT_TIGER_READ_KEY").unwrap();
+	let secret = env::var("BYBIT_TIGER_READ_SECRET").unwrap();
+	bb.update_default_option(BybitOption::Key(key));
+	bb.update_default_option(BybitOption::Secret(secret));
+
 	
 	let binance_usdc = bn.futures_asset_balance("USDC".into()).await.unwrap();
 	let binance_usdt = bn.futures_asset_balance("USDT".into()).await.unwrap();
-
-	dbg!(&binance_usdc, &binance_usdt);
+	let bybit_usdc = bb.futures_asset_balance("USDC".into()).await.unwrap();
+	//let bybit_usdt = bb.futures_asset_balance("USDT".into()).await.unwrap();
 
 	//HACK: in actuallity get in usdt for now, assume 1:1 with usd
-	let total_binance_usd = 100.0;
-	let total_bybit_usd = 100.0;
-
-	total_binance_usd + total_bybit_usd
+	binance_usdc.balance + binance_usdt.balance + bybit_usdc.balance
 }
