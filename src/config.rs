@@ -2,7 +2,22 @@ use color_eyre::eyre::Result;
 use v_utils::{io::ExpandedPath, macros::MyConfigPrimitives};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct AppConfig {}
+pub struct AppConfig {
+	pub binance: BinanceConfig,
+	pub bybit: BybitConfig,
+}
+
+#[derive(Clone, Debug, Default, MyConfigPrimitives)]
+pub struct BinanceConfig {
+	pub key: String,
+	pub secret: String,
+}
+
+#[derive(Clone, Debug, Default, MyConfigPrimitives)]
+pub struct BybitConfig {
+	pub key: String,
+	pub secret: String,
+}
 
 impl AppConfig {
 	pub fn read(path: Option<ExpandedPath>) -> Result<Self> {

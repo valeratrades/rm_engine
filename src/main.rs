@@ -41,7 +41,12 @@ fn main() {
 }
 
 fn start(config: AppConfig, args: StartArgs) {
-	dbg!(&config);
+	let total_balance = request_total_balance(&config);
+	
 	let message = format!("Hello, {}", args.arg);
 	println!("{message}");
+}
+
+fn request_total_balance(config: &AppConfig) -> f64 {
+	100.0
 }
