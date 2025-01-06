@@ -1,8 +1,12 @@
 use color_eyre::eyre::Result;
-use v_utils::{io::ExpandedPath, macros::MyConfigPrimitives};
+use v_utils::{
+	io::{ExpandedPath, Percent},
+	macros::MyConfigPrimitives,
+};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {
+	pub base_intraday_percent_balance_sizing: Percent,
 	pub binance: BinanceConfig,
 	pub bybit: BybitConfig,
 }
