@@ -1,3 +1,4 @@
+use chrono::{TimeDelta, Utc};
 use clap::{Args, Parser, Subcommand};
 use color_eyre::eyre::{Result, bail};
 pub mod config;
@@ -62,19 +63,9 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let total_balance = request_total_balance(&config, &mut bn, &mut bb).await;
 	let price = bn.futures_price(args.pair).await.unwrap();
 
-	let sl_percent: Percent = match args.percent_sl {
-		Some(percent) => percent,
-		None => match args.exact_sl {
-			Some(sl) => ((price - sl).abs() / price).into(),
-			None => match config.default_sl {
-				Some(p) => p,
-				None => bail!("Stop loss not provided. Add default to config or pass an arg."),
-			},
-		},
-	};
-	let time = time_since_comp_move(&config, &mut bn, &args).await;
+	let time = time_since_comp_move(&config, &mut bn, &args, price).await?;
 
-	dbg!(&price, &total_balance, &time);
+	dbg!(&price, &total_balance, &time.num_hours());
 	Ok(())
 }
 
@@ -94,13 +85,37 @@ async fn request_total_balance(config: &AppConfig, bn: &mut Binance, bb: &mut By
 	binance_usdc.balance + binance_usdt.balance + bybit_usdc.balance
 }
 
-async fn time_since_comp_move(config: &AppConfig, bn: &mut Binance, args: &SizeArgs) {
+async fn time_since_comp_move(config: &AppConfig, bn: &mut Binance, args: &SizeArgs, price: f64) -> Result<TimeDelta> {
 	//DO: pick 1m timeframe, request 500 candles
 	//DO: match on crosses, false => up tf to 1h, then 1w
+	let sl_percent: Percent = match args.percent_sl {
+		Some(percent) => percent,
+		None => match args.exact_sl {
+			Some(sl) => ((price - sl).abs() / price).into(),
+			None => match config.default_sl {
+				Some(p) => p,
+				None => bail!("Stop loss not provided. Add default to config or pass an arg."),
+			},
+		},
+	};
+
+	let calc_range = |price: f64, sl_percent: Percent| {
+		let sl = price * *sl_percent;
+		(price - sl, price + sl)
+	};
+	let range = calc_range(price, sl_percent);
 
 	let timeframes: Vec<Timeframe> = vec!["1m".into(), "1h".into(), "1w".into()];
 	for tf in timeframes {
 		let klines = bn.futures_klines(args.pair, tf, 500.into()).await.unwrap();
+		dbg!(&klines[klines.len()-3..]);
+		for k in &*klines {
+			if k.low < range.0 || k.high > range.1 {
+				return Ok(Utc::now() - k.open_time);
+			}
+		}
 	}
-	todo!();
+
+	//TODO!!!: implement
+	todo!("if sl is at 100% or not all historic data is avaliable, could not have any crosses, shouldn't error (but rn it does, deal with it)");
 }
