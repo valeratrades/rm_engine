@@ -44,10 +44,10 @@ want to be able to quickly get correct size I need to use when opening a trade o
 
 
 ### Steps
-- get total balance (today means bybit and binance, all margins (sapi and fapi))
-- get coin's price 
+- [x] get total balance (today means bybit and binance, all margins (sapi and fapi))
+- [x] get coin's price 
 
-- request 500 klines on 1d, then going down, timeframes; until we hit 1m, or have isolated at least 10 candles back from now, that together make up the distance of over 1 stop-loss. Then somehow adjust risk estimate based on that time (do whatever to start with, you'll spend hours deciding otherwise)
+- [ ] request 500 klines on 1d, then going down, timeframes; until we hit 1m, or have isolated at least 10 candles back from now, that together make up the distance of over 1 stop-loss. Then somehow adjust risk estimate based on that time (do whatever to start with, you'll spend hours deciding otherwise)
     funky: could take this diff only in the trade's direction, or make necessary previous move in opposite direction larger, to account for half indirectional volatility, half encouraging following momentum
 
 #### Optimisations
