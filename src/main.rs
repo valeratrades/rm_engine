@@ -29,7 +29,8 @@ struct StartArgs {
 	arg: String,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
 	let cli = Cli::parse();
 	let config = match AppConfig::read(cli.config) {
 		Ok(config) => config,
@@ -39,18 +40,22 @@ fn main() {
 		}
 	};
 	match cli.command {
-		Commands::Start(args) => start(config, args),
+		Commands::Start(args) => start(config, args).await,
 	}
 }
 
-fn start(config: AppConfig, args: StartArgs) {
-	let total_balance = request_total_balance(&config);
+async fn start(config: AppConfig, args: StartArgs) {
+	let total_balance = request_total_balance(&config).await;
 	
 	let message = format!("Hello, {}", args.arg);
 	println!("{message}");
 }
 
-fn request_total_balance(config: &AppConfig) -> f64 {
+async  fn request_total_balance(config: &AppConfig) -> f64 {
+	let bi = Binance::default();
+	let _dbg = bi.futures_price(("BTC", "USDT").into()).await.unwrap();
+	println!("{_dbg}");
+
 	//HACK: in actuallity get in usdt for now, assume 1:1 with usd
 	let total_binance_usd = 100.0;
 	let total_bybit_usd = 100.0;

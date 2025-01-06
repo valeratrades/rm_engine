@@ -37,6 +37,11 @@ want to be able to quickly get correct size I need to use when opening a trade o
 	OR
 	None: assume 20%
 
+### Solution
++ first iteration: model 1:1 the previous found move of the same scale. Simply estimate it as same time horizon with 1 std certainty
+
++ after: find distance to first cross of matching scale, 10x the area, ensure at least 100 datapoints total, Exponentially weight them and use for expected volatility estimation 
+
 
 ### Steps
 - get total balance (today means bybit and binance, all margins (sapi and fapi))
@@ -44,6 +49,9 @@ want to be able to quickly get correct size I need to use when opening a trade o
 
 - request 500 klines on 1d, then going down, timeframes; until we hit 1m, or have isolated at least 10 candles back from now, that together make up the distance of over 1 stop-loss. Then somehow adjust risk estimate based on that time (do whatever to start with, you'll spend hours deciding otherwise)
     funky: could take this diff only in the trade's direction, or make necessary previous move in opposite direction larger, to account for half indirectional volatility, half encouraging following momentum
+
+#### Optimisations
+- potentially make all of these in one bunch, then after one comes through, check if we still need to await the rest.
 
 ### Problems
 - the closer the stop-loss, the higher the risk. Really should be adjusting for that
