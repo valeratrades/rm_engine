@@ -23,3 +23,4 @@ config = { version = "^0.15.4" }
 derive-new = "^0"
 v_utils = { features = ["io", "macros"], path = "../v_utils/v_utils", version = "^2.0.0" } #ga: rm path
 serde = { version = "1.0.217", features = ["derive"] }
+v_exchanges = { version = "0.1.1", features = ["binance", "bybit"] }
