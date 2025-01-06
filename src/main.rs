@@ -1,8 +1,10 @@
 use clap::{Args, Parser, Subcommand};
 pub mod config;
 use config::AppConfig;
+use std::env;
 use v_utils::io::ExpandedPath;
 use v_exchanges::{binance::Binance, core::Exchange};
+use v_exchanges::adapters::binance::BinanceOption;
 use v_exchanges::{bybit::Bybit};
 
 
@@ -45,16 +47,24 @@ async fn main() {
 }
 
 async fn start(config: AppConfig, args: StartArgs) {
-	let total_balance = request_total_balance(&config).await;
-	
-	let message = format!("Hello, {}", args.arg);
-	println!("{message}");
+	let mut bn = Binance::default();
+	let total_balance = request_total_balance(&mut bn).await;
+	let price = bn.futures_price(("BTC", "USDT").into()).await.unwrap();
+
+	dbg!(&price, &total_balance);
 }
 
-async  fn request_total_balance(config: &AppConfig) -> f64 {
-	let bi = Binance::default();
-	let _dbg = bi.futures_price(("BTC", "USDT").into()).await.unwrap();
-	println!("{_dbg}");
+async  fn request_total_balance(bn: &mut Binance) -> f64 {
+	let key = env::var("BINANCE_TIGER_READ_KEY").unwrap();
+	let secret = env::var("BINANCE_TIGER_READ_SECRET").unwrap();
+	bn.update_default_option(BinanceOption::Key(key));
+	bn.update_default_option(BinanceOption::Secret(secret));
+
+	
+	let binance_usdc = bn.futures_asset_balance("USDC".into()).await.unwrap();
+	let binance_usdt = bn.futures_asset_balance("USDT".into()).await.unwrap();
+
+	dbg!(&binance_usdc, &binance_usdt);
 
 	//HACK: in actuallity get in usdt for now, assume 1:1 with usd
 	let total_binance_usd = 100.0;

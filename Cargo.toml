@@ -21,7 +21,8 @@ clap = { version = "^4.5.23", features = ["derive"] }
 color-eyre = "^0.6.3"
 config = { version = "^0.15.4" }
 derive-new = "^0"
-v_utils = { features = ["io", "macros"], path = "../v_utils/v_utils", version = "^2.0.0" } #ga: rm path
 serde = { version = "1.0.217", features = ["derive"] }
-v_exchanges = { version = "0.2.0", features = ["binance", "bybit"] }
 tokio = { version = "1.42.0", features = ["full"] }
+
+v_utils = { features = ["io", "macros"], path = "../v_utils/v_utils", version = "^2.0.0" } #ga: rm path
+v_exchanges = { version = "0.2.0", path = "../v_exchanges/v_exchanges", features = ["binance", "bybit"] } #ga: rm path
