@@ -3,6 +3,11 @@ name = "rm_engine"
 version = "0.1.0"
 edition = "2024"
 
+license = "MIT"
+documentation = "https://github.com/valeratrades/rm_engine?tab=readme-ov-file#rm_engine"
+repository = "https://github.com/valeratrades/rm_engine/tree/master/rm_engine"
+homepage = "https://github.com/valeratrades/rm_engine"
+
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
