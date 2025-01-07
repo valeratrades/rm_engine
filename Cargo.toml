@@ -1,3 +1,5 @@
+cargo-features = ["codegen-backend"]
+
 [package]
 name = "rm_engine"
 version = "0.1.0"
@@ -32,9 +34,11 @@ config = { version = "^0.15.4" }
 derive-new = "^0"
 serde = { version = "1.0.217", features = ["derive"] }
 tokio = { version = "1.42.0", features = ["full"] }
-v_exchanges = { version = "0.2.0", path = "../v_exchanges/v_exchanges", features = ["binance", "bybit"] } #ga: rm path
+v_exchanges = { version = "^0.2.0", features = ["binance", "bybit"] } #ga: rm path
+	#path = "../v_exchanges/v_exchanges",
 
-v_utils = { features = ["io", "macros"], path = "../v_utils/v_utils", version = "^2.0.0" } #ga: rm path
+v_utils = { features = ["io", "macros", "trades"], version = "^2.0.0" } #ga: rm path
+	#path = "../v_utils/v_utils", 
 
 [dev-dependencies]
 insta = "1.42.0"
