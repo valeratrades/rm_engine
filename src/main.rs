@@ -127,8 +127,10 @@ fn mul_criterion(time: TimeDelta) -> f64 {
 	// 5 -> 0.9
 	// 10+ -> ~1
 	let hours = time.num_hours() as f64;
-	//(hours.sqrt() /*powf(0.5)*/ + 2.0) / 10.0
-	//hours.powf(4.0) / 500.0 + 2.0
+
+	// potentially transfer to just use something like `-1/(x+1) + 1` (to integrate would first need to fix snapshot, current one doesn't satisfy
+	// methods for finding a better approximation: [../docs/assets/prof_advice_on_approximating_size_mul.pdf]
+
 	(2.0 - (3.0_f64).powf(0.25) * (10.0_f64).powf(0.5) * hours.powf(0.25)).abs() / 10.0
 }
 
