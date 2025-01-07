@@ -1,6 +1,6 @@
 use chrono::{TimeDelta, Utc};
 use clap::{Args, Parser, Subcommand};
-use color_eyre::eyre::{Result, bail};
+use color_eyre::eyre::Result;
 pub mod config;
 
 use config::AppConfig;
@@ -63,9 +63,21 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let total_balance = request_total_balance(&config, &mut bn, &mut bb).await;
 	let price = bn.futures_price(args.pair).await.unwrap();
 
-	let time = time_since_comp_move(&config, &mut bn, &args, price).await?;
+	let sl_percent: Percent = match args.percent_sl {
+		Some(percent) => percent,
+		None => match args.exact_sl {
+			Some(sl) => ((price - sl).abs() / price).into(),
+			None => config.default_sl,
+		},
+	};
+	let time = time_since_comp_move(&config, &mut bn, &args, price, sl_percent).await?;
 
-	dbg!(&price, &total_balance, &time.num_hours());
+	let mul = mul_criterion(time);
+	let target_risk = &*config.default_risk_percent_balance * mul;
+	let size = total_balance * (target_risk / *sl_percent);
+
+	dbg!(&price, &total_balance, &time.num_hours(), target_risk, mul);
+	println!("Size: {size:.2}");
 	Ok(())
 }
 
@@ -76,6 +88,7 @@ async fn request_total_balance(config: &AppConfig, bn: &mut Binance, bb: &mut By
 	bb.update_default_option(BybitOption::Key(config.bybit.key.clone()));
 	bb.update_default_option(BybitOption::Secret(config.bybit.secret.clone()));
 
+	//TODO!!!!!: generalize to get a) all assets, b) their usd values, not notional
 	let binance_usdc = bn.futures_asset_balance("USDC".into()).await.unwrap();
 	let binance_usdt = bn.futures_asset_balance("USDT".into()).await.unwrap();
 	let bybit_usdc = bb.futures_asset_balance("USDC".into()).await.unwrap();
@@ -85,20 +98,7 @@ async fn request_total_balance(config: &AppConfig, bn: &mut Binance, bb: &mut By
 	binance_usdc.balance + binance_usdt.balance + bybit_usdc.balance
 }
 
-async fn time_since_comp_move(config: &AppConfig, bn: &mut Binance, args: &SizeArgs, price: f64) -> Result<TimeDelta> {
-	//DO: pick 1m timeframe, request 500 candles
-	//DO: match on crosses, false => up tf to 1h, then 1w
-	let sl_percent: Percent = match args.percent_sl {
-		Some(percent) => percent,
-		None => match args.exact_sl {
-			Some(sl) => ((price - sl).abs() / price).into(),
-			None => match config.default_sl {
-				Some(p) => p,
-				None => bail!("Stop loss not provided. Add default to config or pass an arg."),
-			},
-		},
-	};
-
+async fn time_since_comp_move(_config: &AppConfig, bn: &mut Binance, args: &SizeArgs, price: f64, sl_percent: Percent) -> Result<TimeDelta> {
 	let calc_range = |price: f64, sl_percent: Percent| {
 		let sl = price * *sl_percent;
 		(price - sl, price + sl)
@@ -108,8 +108,7 @@ async fn time_since_comp_move(config: &AppConfig, bn: &mut Binance, args: &SizeA
 	let timeframes: Vec<Timeframe> = vec!["1m".into(), "1h".into(), "1w".into()];
 	for tf in timeframes {
 		let klines = bn.futures_klines(args.pair, tf, 500.into()).await.unwrap();
-		dbg!(&klines[klines.len()-3..]);
-		for k in &*klines {
+		for k in klines.iter().rev() {
 			if k.low < range.0 || k.high > range.1 {
 				return Ok(Utc::now() - k.open_time);
 			}
@@ -118,4 +117,51 @@ async fn time_since_comp_move(config: &AppConfig, bn: &mut Binance, args: &SizeA
 
 	//TODO!!!: implement
 	todo!("if sl is at 100% or not all historic data is avaliable, could not have any crosses, shouldn't error (but rn it does, deal with it)");
+}
+
+fn mul_criterion(time: TimeDelta) -> f64 {
+	// 0.1 -> 0.2
+	// 0.5 -> 0.5
+	// 1 -> 0.7
+	// 2 -> 0.8
+	// 5 -> 0.9
+	// 10+ -> ~1
+	let hours = time.num_hours() as f64;
+	//(hours.sqrt() /*powf(0.5)*/ + 2.0) / 10.0
+	//hours.powf(4.0) / 500.0 + 2.0
+	(2.0 - (3.0_f64).powf(0.25) * (10.0_f64).powf(0.5) * hours.powf(0.25)).abs() / 10.0
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	//TODO!: make a better snapshot test. Want a single assert on a plot.
+	#[test]
+	fn test_mul_criterion() {
+		let v = 0.1;
+		let time = TimeDelta::minutes((v * 60.0) as i64);
+		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
+		insta::assert_snapshot!(f, @"0.1 -> 0.200");
+
+		let v = 1.0;
+		let time = TimeDelta::minutes((v * 60.0) as i64);
+		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
+		insta::assert_snapshot!(f, @"1.0 -> 0.216");
+
+		let v = 2.0; 
+		let time = TimeDelta::minutes((v * 60.0) as i64);
+		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
+		insta::assert_snapshot!(f, @"2.0 -> 0.295");
+
+		let v = 5.0;
+		let time = TimeDelta::minutes((v * 60.0) as i64);
+		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
+		insta::assert_snapshot!(f, @"5.0 -> 0.422");
+
+		let v = 100.0;
+		let time = TimeDelta::minutes((v * 60.0) as i64);
+		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
+		insta::assert_snapshot!(f, @"100.0 -> 1.116");
+	}
 }

@@ -17,7 +17,9 @@
 <!-- markdownlint-restore -->
 
 ## Usage
-TODO
+```sh
+rm_engine size btc/usdt --percent-sl 2%
+```
 
 
 ## Roadmap
@@ -28,7 +30,7 @@ TODO
 want to be able to quickly get correct size I need to use when opening a trade on a given ticker, based on expected volatility (in future based on pattern and my trading history with it too, but that's later).
 
 
-### Args
+#### Args
 - coin (exchange doesn't matter, and we ignore liquidity for now, so neither does pair)
 - --sl | -s
 	% away: convert to exact price, print it (small reduction to possible human error)
@@ -37,28 +39,33 @@ want to be able to quickly get correct size I need to use when opening a trade o
 	OR
 	None: assume 20%
 
-### Solution
-+ first iteration: model 1:1 the previous found move of the same scale. Simply estimate it as same time horizon with 1 std certainty
 
-+ after: find distance to first cross of matching scale, 10x the area, ensure at least 100 datapoints total, Exponentially weight them and use for expected volatility estimation 
-
-
-### Steps
+#### Steps
 - [x] get total balance (today means bybit and binance, all margins (sapi and fapi))
 - [x] get coin's price 
 
-- [ ] request 500 klines on 1d, then going down, timeframes; until we hit 1m, or have isolated at least 10 candles back from now, that together make up the distance of over 1 stop-loss. Then somehow adjust risk estimate based on that time (do whatever to start with, you'll spend hours deciding otherwise)
-    funky: could take this diff only in the trade's direction, or make necessary previous move in opposite direction larger, to account for half indirectional volatility, half encouraging following momentum
+- [ ] risk est, mul the with default % of depo
+  Large, requires a <plan>
+
+#### Plan
+- [x] 0.1: random criterion based on time it took to go same distance last time. 
+
+- [ ] 1.0:
++ make a formula to quantify indirectional-vol
++ take entries from 3x back from the distance it last took to go the SL length
++ Exponentially weigh them, feed into da formula
++ trial and error the answer. Get any starting point, use the thing to trade, adjust as the intuition of this develops
+
 
 #### Optimisations
-- potentially make all of these in one bunch, then after one comes through, check if we still need to await the rest.
+- [ ] make all requests in one bunch, then after one comes through, check if we still need to await the rest.
 
-### Problems
-- the closer the stop-loss, the higher the risk. Really should be adjusting for that
+#### Problems
 - could have existing, correlatory with target, positions (ignore for now)
 
-### Blockers
-- Can't decide if I want to mimic EV calc estimation for options or just use recent history 1:1
+#### Blockers
+- way of quantifying indirectional volatility
+
 
 <br>
 

@@ -27,3 +27,6 @@ tokio = { version = "1.42.0", features = ["full"] }
 v_utils = { features = ["io", "macros"], path = "../v_utils/v_utils", version = "^2.0.0" } #ga: rm path
 v_exchanges = { version = "0.2.0", path = "../v_exchanges/v_exchanges", features = ["binance", "bybit"] } #ga: rm path
 chrono = "0.4.39"
+
+[dev-dependencies]
+insta = "1.42.0"

@@ -2059,6 +2059,7 @@ dependencies = [
  "color-eyre",
  "config",
  "derive-new",
+ "insta",
  "serde",
  "tokio",
  "v_exchanges",
