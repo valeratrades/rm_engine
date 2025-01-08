@@ -55,6 +55,23 @@
         "type": "github"
       }
     },
+    "hooks": {
+      "locked": {
+        "dir": "hooks",
+        "lastModified": 1736353149,
+        "narHash": "sha256-R1B5m/3AlMe4KnCyFt6RVxokhc3aloJsDM7nwYuF7NA=",
+        "owner": "valeratrades",
+        "repo": ".github",
+        "rev": "6854236db7173d6a035d5537f8a0f754f100b1bd",
+        "type": "github"
+      },
+      "original": {
+        "dir": "hooks",
+        "owner": "valeratrades",
+        "repo": ".github",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1735291276,
@@ -143,6 +160,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "hooks": "hooks",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
         "rust-overlay": "rust-overlay",
