@@ -23,7 +23,7 @@
               treefmt = {
                 enable = true;
                 settings = {
-                fail-on-change = true; #dbg: should be false: that's GHA's job, pre-commit hooks stricty *do*
+                  fail-on-change = false; # that's GHA's job, pre-commit hooks stricty *do*
                   formatters = with pkgs; [
                     nixpkgs-fmt
                   ];
