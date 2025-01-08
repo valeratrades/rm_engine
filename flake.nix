@@ -36,7 +36,7 @@
                     #''cargo sort''; # --grouped'';
                     #''notify-send "(pwd)" -t 999999; cargo sort -c .'';
                   ''
-                    echo "CWD: $(pwd)" >> /tmp/pre-commit-hooks.log;
+                    echo "CWD: $(pwd)" > /tmp/pre-commit-hooks.log;
                     cargo sort --grouped --workspace .
                   '';
 

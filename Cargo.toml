@@ -26,6 +26,7 @@ len_zero = "allow" # `.empty()` is O(1) but on &str only
 undocumented_unsafe_blocks = "warn"
 tabs_in_doc_comments = "allow"
 
+
 [dependencies]
 clap = { version = "^4.5.23", features = ["derive"] }
 color-eyre = "^0.6.3"
