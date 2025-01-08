@@ -23,6 +23,7 @@
               treefmt = {
                 enable = true;
                 settings = {
+                  #BUG: this option does NOTHING
                   fail-on-change = false; # that's GHA's job, pre-commit hooks stricty *do*
                   formatters = with pkgs; [
                     nixpkgs-fmt
@@ -70,6 +71,7 @@
             rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
 
             cargo -Zscript -q ${hooks.appendCustom} ./.git/hooks/pre-commit
+            cp -f ${(import hooks.treefmt {inherit pkgs;})} ./.treefmt.toml
           '';
           packages = [
             mold-wrapped

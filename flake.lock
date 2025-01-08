@@ -58,11 +58,11 @@
     "hooks": {
       "locked": {
         "dir": "hooks",
-        "lastModified": 1736353149,
-        "narHash": "sha256-R1B5m/3AlMe4KnCyFt6RVxokhc3aloJsDM7nwYuF7NA=",
+        "lastModified": 1736356095,
+        "narHash": "sha256-37SECNSGTd4admlNA7Idl51jIcVvfqqaQmggSQsIc4U=",
         "owner": "valeratrades",
         "repo": ".github",
-        "rev": "6854236db7173d6a035d5537f8a0f754f100b1bd",
+        "rev": "c89730a8fe623e61cb8542c5db63ee33680e271c",
         "type": "github"
       },
       "original": {

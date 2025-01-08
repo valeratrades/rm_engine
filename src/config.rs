@@ -26,7 +26,7 @@ pub struct BybitConfig {
 
 impl AppConfig {
 	pub fn read(path: Option<ExpandedPath>) -> Result<Self> {
-		let app_name = std::env::var("CARGO_PKG_NAME").unwrap();
+		let app_name = env!("CARGO_PKG_NAME");
 		let config_dir = std::env::var("XDG_CONFIG_HOME").unwrap();
 		let locations = [
 			format!("{config_dir}/{app_name}"),
