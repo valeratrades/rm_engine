@@ -38,7 +38,8 @@
                     #''
                     #  cargo sort . ${shared_flags}''# || echo "It likely sorted the files successfully, and now struggling with `crate folder not found` for whatever reason it does that"''
 
-                  ''notify-send -t 999999'';
+                    #''notify-send -t 999999'';
+                  ''cargo sort'';
 
                 files = "Cargo.toml";
                 stages = [ "pre-commit" ];
@@ -84,6 +85,8 @@
           shellHook = checks.pre-commit-check.shellHook + ''
             rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
             rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
+
+            #echo "notify-send -t 999999 'Shell hook goes brrrr'" >> ./.git/hooks/pre-commit
           '';
           packages = [
             mold-wrapped
