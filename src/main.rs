@@ -136,8 +136,9 @@ fn mul_criterion(time: TimeDelta) -> f64 {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use v_utils::utils::SnapshotP;
+
+	use super::*;
 
 	#[test]
 	fn proper_mul_snapshot_test() {

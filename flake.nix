@@ -23,16 +23,16 @@
               treefmt = {
                 enable = true;
                 settings = {
-                #fail-on-change = false; # that's GHA's job, pre-commit hooks stricty *do*
-                formatters = with pkgs; [
-                nixpkgs-fmt
-                ];
+                fail-on-change = true; #dbg: should be false: that's GHA's job, pre-commit hooks stricty *do*
+                  formatters = with pkgs; [
+                    nixpkgs-fmt
+                  ];
                 };
               };
             };
           };
         };
-                workflowContents = (import ./.github/workflows/ci.nix) { inherit pkgs workflow-parts; };
+        workflowContents = (import ./.github/workflows/ci.nix) { inherit pkgs workflow-parts; };
       in
       {
         packages =
