@@ -26,21 +26,17 @@ len_zero = "allow" # `.empty()` is O(1) but on &str only
 undocumented_unsafe_blocks = "warn"
 tabs_in_doc_comments = "allow"
 
-
 [dependencies]
+chrono = "0.4.39"
 clap = { version = "^4.5.23", features = ["derive"] }
 color-eyre = "^0.6.3"
-chrono = "0.4.39"
 config = { version = "^0.15.4" }
 derive-new = "^0"
 serde = { version = "1.0.217", features = ["derive"] }
 tokio = { version = "1.42.0", features = ["full"] }
 v_exchanges = { version = "^0.2.0", features = ["binance", "bybit"] } #ga: rm path
 	#path = "../v_exchanges/v_exchanges",
-
 v_utils = { features = ["io", "macros", "trades"], version = "^2.0.0" } #ga: rm path
-	#path = "../v_utils/v_utils", 
-
 [dev-dependencies]
 insta = "1.42.0"
-
+	#path = "../v_utils/v_utils", 

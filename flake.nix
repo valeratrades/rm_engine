@@ -30,15 +30,15 @@
                 #files = "Cargo.toml";
                 entry =
                   let
-                    shared_flags = /*--grouped*/''--order package,dependencies,dev-dependencies,build-dependencies,features'';
+                    shared_flags = ''--grouped --order package,lints,dependencies,dev-dependencies,build-dependencies,features'';
                   in
                   #''cargo sort --workspace ${shared_flags} || cargo sort ${shared_flags}'';
                     #''cargo sort''; # --grouped'';
                     #''notify-send "(pwd)" -t 999999; cargo sort -c .'';
-                  ''
-                    echo "CWD: $(pwd)" > /tmp/pre-commit-hooks.log;
-                    cargo sort --grouped --workspace .
-                  '';
+                    #''
+                    #  cargo sort . ${shared_flags}''# || echo "It likely sorted the files successfully, and now struggling with `crate folder not found` for whatever reason it does that"''
+
+                  ''notify-send -t 999999'';
 
                 files = "Cargo.toml";
                 stages = [ "pre-commit" ];
