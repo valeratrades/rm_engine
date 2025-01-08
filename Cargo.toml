@@ -27,9 +27,9 @@ undocumented_unsafe_blocks = "warn"
 tabs_in_doc_comments = "allow"
 
 [dependencies]
-chrono = "0.4.39"
 clap = { version = "^4.5.23", features = ["derive"] }
 color-eyre = "^0.6.3"
+chrono = "0.4.39"
 config = { version = "^0.15.4" }
 derive-new = "^0"
 serde = { version = "1.0.217", features = ["derive"] }

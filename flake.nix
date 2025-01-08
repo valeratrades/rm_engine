@@ -39,6 +39,7 @@
                     echo "CWD: $(pwd)" >> /tmp/pre-commit-hooks.log;
                     cargo sort --grouped --workspace .
                   '';
+
                 files = "Cargo.toml";
                 stages = [ "pre-commit" ];
                 language = "rust";
