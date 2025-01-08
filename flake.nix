@@ -32,7 +32,7 @@
             };
           };
         };
-              workflowContents = (import ./.github/workflows/ci.nix) { inherit pkgs workflow-parts; };
+                workflowContents = (import ./.github/workflows/ci.nix) { inherit pkgs workflow-parts; };
       in
       {
         packages =
