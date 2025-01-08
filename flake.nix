@@ -19,7 +19,7 @@
             src = ./.;
             hooks = {
               nixpkgs-fmt.enable = true;
-              rustfmt.enable = true;
+              #rustfmt.enable = true;
 
 
               ##TODO!!!: configure using https://github.com/cachix/git-hooks.nix?tab=readme-ov-file#custom-hooks
@@ -27,9 +27,21 @@
               test = {
                 enable = true;
                 #entry = ''notify-send "Test hook goes brrrr" -t 999999'';
+                #files = "Cargo.toml";
+                entry =
+                  let
+                    shared_flags = /*--grouped*/''--order package,dependencies,dev-dependencies,build-dependencies,features'';
+                  in
+                  #''cargo sort --workspace ${shared_flags} || cargo sort ${shared_flags}'';
+                    #''cargo sort''; # --grouped'';
+                    #''notify-send "(pwd)" -t 999999; cargo sort -c .'';
+                  ''
+                    echo "CWD: $(pwd)" >> /tmp/pre-commit-hooks.log;
+                    cargo sort --grouped --workspace .
+                  '';
                 files = "Cargo.toml";
-                entry = ''cargo sort --workspace --grouped --order package,dependencies,dev-dependencies,build-dependencies,features'';
                 stages = [ "pre-commit" ];
+                language = "rust";
               };
             };
           };

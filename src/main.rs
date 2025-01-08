@@ -137,33 +137,28 @@ fn mul_criterion(time: TimeDelta) -> f64 {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use v_utils::utils::SnapshotP;
 
-	//TODO!: make a better snapshot test. Want a single assert on a plot.
 	#[test]
-	fn test_mul_criterion() {
-		let v = 0.1;
-		let time = TimeDelta::minutes((v * 60.0) as i64);
-		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
-		insta::assert_snapshot!(f, @"0.1 -> 0.200");
+	fn proper_mul_snapshot_test() {
+		//TODO!: switch to using non-homogeneous steps, so the data is dencer near 0 (requires: 1) new snapshot fn, 2) fn to gen it)
+		let x_points: Vec<f64> = (0..1000).map(|x| (x as f64) / 10.0).collect();
+		let mul_out: Vec<f64> = x_points.iter().map(|x| mul_criterion(TimeDelta::minutes((x * 60.0) as i64))).collect();
+		let plot = SnapshotP::build(&mul_out).draw();
 
-		let v = 1.0;
-		let time = TimeDelta::minutes((v * 60.0) as i64);
-		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
-		insta::assert_snapshot!(f, @"1.0 -> 0.216");
-
-		let v = 2.0; 
-		let time = TimeDelta::minutes((v * 60.0) as i64);
-		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
-		insta::assert_snapshot!(f, @"2.0 -> 0.295");
-
-		let v = 5.0;
-		let time = TimeDelta::minutes((v * 60.0) as i64);
-		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
-		insta::assert_snapshot!(f, @"5.0 -> 0.422");
-
-		let v = 100.0;
-		let time = TimeDelta::minutes((v * 60.0) as i64);
-		let f = format!("{v:.1} -> {:.3}", mul_criterion(time));
-		insta::assert_snapshot!(f, @"100.0 -> 1.116");
+		insta::assert_snapshot!(plot, @r#"
+                                                                         ▁▁▂▂▃▃▃▄▄▄▅▆▆▆▇▇▇██1.113
+                                                         ▁▁▂▂▃▃▄▄▅▅▆▆▇▇█████████████████████     
+                                             ▁▂▃▃▄▅▅▆▆▇▇████████████████████████████████████     
+                                  ▁▂▂▃▅▅▆▇▇█████████████████████████████████████████████████     
+                          ▁▂▃▅▆▇▇███████████████████████████████████████████████████████████     
+                   ▁▃▄▅▆▇███████████████████████████████████████████████████████████████████     
+              ▂▃▅▆▇█████████████████████████████████████████████████████████████████████████     
+           ▄▆███████████████████████████████████████████████████████████████████████████████     
+        ▃▆██████████████████████████████████████████████████████████████████████████████████     
+      ▄█████████████████████████████████████████████████████████████████████████████████████     
+    ▂███████████████████████████████████████████████████████████████████████████████████████     
+  ▁▂████████████████████████████████████████████████████████████████████████████████████████0.200
+  "#);
 	}
 }

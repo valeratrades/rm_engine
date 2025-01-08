@@ -42,3 +42,4 @@ v_utils = { features = ["io", "macros", "trades"], version = "^2.0.0" } #ga: rm 
 
 [dev-dependencies]
 insta = "1.42.0"
+
