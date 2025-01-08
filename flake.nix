@@ -86,7 +86,7 @@
             rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
             rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
 
-            #echo "notify-send -t 999999 'Shell hook goes brrrr'" >> ./.git/hooks/pre-commit
+            cargo -Zscript -q ./tmp/script.rs ./.git/hooks/pre-commit
           '';
           packages = [
             mold-wrapped
