@@ -27,10 +27,12 @@ pub struct BybitConfig {
 impl AppConfig {
 	pub fn read(path: Option<ExpandedPath>) -> Result<Self> {
 		let app_name = env!("CARGO_PKG_NAME");
-		let config_dir = std::env::var("XDG_CONFIG_HOME").unwrap();
+		let xdg_dirs = xdg::BaseDirectories::with_prefix(app_name).unwrap();
+		let xdg_conf_dir = xdg_dirs.get_config_home().parent().unwrap().display().to_string();
+
 		let locations = [
-			format!("{config_dir}/{app_name}"),
-			format!("{config_dir}/{app_name}/config"), //
+			format!("{xdg_conf_dir}/{app_name}"),
+			format!("{xdg_conf_dir}/{app_name}/config"), //
 		];
 
 		let mut builder = config::Config::builder().add_source(config::Environment::default());

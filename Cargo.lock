@@ -2064,6 +2064,7 @@ dependencies = [
  "tokio",
  "v_exchanges",
  "v_utils",
+ "xdg",
 ]
 
 [[package]]

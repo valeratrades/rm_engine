@@ -37,6 +37,7 @@ tokio = { version = "1.42.0", features = ["full"] }
 v_exchanges = { version = "^0.2.0", features = ["binance", "bybit"] } #ga: rm path
 	#path = "../v_exchanges/v_exchanges",
 v_utils = { features = ["io", "macros", "trades"], version = "^2.0.0" } #ga: rm path
+xdg = "2.5.2"
 [dev-dependencies]
 insta = "1.42.0"
 	#path = "../v_utils/v_utils", 
