@@ -70,13 +70,14 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 			None => config.default_sl,
 		},
 	};
+	dbg!(sl_percent);
 	let time = time_since_comp_move(&config, &mut bn, &args, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
-	let target_risk = &*config.default_risk_percent_balance * mul;
+	let target_risk = *config.default_risk_percent_balance * mul;
 	let size = total_balance * (target_risk / *sl_percent);
 
-	dbg!(&price, &total_balance, &time.num_hours(), target_risk, mul);
+	dbg!(price, total_balance, time.num_hours(), target_risk, mul);
 	println!("Size: {size:.2}");
 	Ok(())
 }
@@ -98,6 +99,7 @@ async fn request_total_balance(config: &AppConfig, bn: &mut Binance, bb: &mut By
 	binance_usdc.balance + binance_usdt.balance + bybit_usdc.balance
 }
 
+//TODO!: measure 10 back, EMA over them
 async fn time_since_comp_move(_config: &AppConfig, bn: &mut Binance, args: &SizeArgs, price: f64, sl_percent: Percent) -> Result<TimeDelta> {
 	let calc_range = |price: f64, sl_percent: Percent| {
 		let sl = price * *sl_percent;
@@ -107,7 +109,7 @@ async fn time_since_comp_move(_config: &AppConfig, bn: &mut Binance, args: &Size
 
 	let timeframes: Vec<Timeframe> = vec!["1m".into(), "1h".into(), "1w".into()];
 	for tf in timeframes {
-		let klines = bn.futures_klines(args.pair, tf, 500.into()).await.unwrap();
+		let klines = bn.futures_klines(args.pair, tf, 1000.into()).await.unwrap();
 		for k in klines.iter().rev() {
 			if k.low < range.0 || k.high > range.1 {
 				return Ok(Utc::now() - k.open_time);
