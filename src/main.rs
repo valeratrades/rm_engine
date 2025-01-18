@@ -4,13 +4,7 @@ use color_eyre::eyre::Result;
 pub mod config;
 
 use config::AppConfig;
-use v_exchanges::{
-	adapters::{binance::BinanceOption, bybit::BybitOption},
-	binance::Binance,
-	bybit::Bybit,
-	core::Exchange,
-	mexc::Mexc,
-};
+use v_exchanges::{core::Exchange, prelude::*};
 use v_utils::{
 	Percent,
 	io::ExpandedPath,
@@ -60,11 +54,15 @@ async fn main() {
 }
 
 async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
-	let mut bn = Binance::default();
-	let mut bb = Bybit::default();
-	let mut mx = Mexc::default();
-	let total_balance = request_total_balance(&config, &mut bn, &mut bb).await;
-	let price = bn.futures_price(args.pair).await.unwrap();
+	let mut bn = AbsMarket::from("Binance/Futures").client();
+	bn.auth(config.binance.key.clone(), config.binance.secret.clone());
+	let mut bb = AbsMarket::from("Bybit/Linear").client();
+	bb.auth(config.bybit.key.clone(), config.bybit.secret.clone());
+	let mut mx = AbsMarket::from("Mexc/Futures").client();
+	mx.auth(config.mexc.key.clone(), config.mexc.secret.clone());
+
+	let total_balance = request_total_balance(&*bn, &*bb, &*mx).await;
+	let price = bn.price(args.pair, "Binance/Futures".into()).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -74,7 +72,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		},
 	};
 	dbg!(sl_percent);
-	let time = time_since_comp_move(&config, &mut bn, &args, price, sl_percent).await?;
+	let time = time_since_comp_move(&config, &*bn, &args, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let target_risk = *config.default_risk_percent_balance * mul;
@@ -85,25 +83,23 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	Ok(())
 }
 
-async fn request_total_balance(config: &AppConfig, bn: &mut Binance, bb: &mut Bybit) -> f64 {
-	bn.update_default_option(BinanceOption::Key(config.binance.key.clone()));
-	bn.update_default_option(BinanceOption::Secret(config.binance.secret.clone()));
-
-	bb.update_default_option(BybitOption::Key(config.bybit.key.clone()));
-	bb.update_default_option(BybitOption::Secret(config.bybit.secret.clone()));
-
+async fn request_total_balance(bn: &dyn Exchange, bb: &dyn Exchange, mx: &dyn Exchange) -> f64 {
 	//TODO!!!!!: generalize to get a) all assets, b) their usd values, not notional
-	let binance_usdc = bn.futures_asset_balance("USDC".into()).await.unwrap();
-	let binance_usdt = bn.futures_asset_balance("USDT".into()).await.unwrap();
-	let bybit_usdc = bb.futures_asset_balance("USDC".into()).await.unwrap();
-	//let bybit_usdt = bb.futures_asset_balance("USDT".into()).await.unwrap();
+	let binance_usdc = bn.asset_balance("USDC".into(), bn.source_market()).await.unwrap();
+	let binance_usdt = bn.asset_balance("USDT".into(), bn.source_market()).await.unwrap();
+
+	dbg!(&bb);
+	let bybit_usdt = bb.asset_balance("USDT".into(), bb.source_market()).await.unwrap();
+	let bybit_usdc = bb.asset_balance("USDC".into(), bb.source_market()).await.unwrap();
+
+	let mexc_usdt = mx.asset_balance("USDT".into(), mx.source_market()).await.unwrap();
 
 	//HACK: in actuality get in usdt for now, assume 1:1 with usd
-	binance_usdc.balance + binance_usdt.balance + bybit_usdc.balance
+	*binance_usdc + *binance_usdt + *bybit_usdt + *bybit_usdc + *mexc_usdt
 }
 
 //TODO!: measure 10 back, EMA over them
-async fn time_since_comp_move(_config: &AppConfig, bn: &mut Binance, args: &SizeArgs, price: f64, sl_percent: Percent) -> Result<TimeDelta> {
+async fn time_since_comp_move(_config: &AppConfig, bn: &dyn Exchange, args: &SizeArgs, price: f64, sl_percent: Percent) -> Result<TimeDelta> {
 	let calc_range = |price: f64, sl_percent: Percent| {
 		let sl = price * *sl_percent;
 		(price - sl, price + sl)
@@ -112,7 +108,7 @@ async fn time_since_comp_move(_config: &AppConfig, bn: &mut Binance, args: &Size
 
 	let timeframes: Vec<Timeframe> = vec!["1m".into(), "1h".into(), "1w".into()];
 	for tf in timeframes {
-		let klines = bn.futures_klines(args.pair, tf, 1000.into()).await.unwrap();
+		let klines = bn.klines(args.pair, tf, 1000.into(), bn.source_market()).await.unwrap();
 		for k in klines.iter().rev() {
 			if k.low < range.0 || k.high > range.1 {
 				return Ok(Utc::now() - k.open_time);

@@ -2988,8 +2988,6 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "v_exchanges"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cd01541c882c1b137fec0836922c98b9ad83c4c1a0f47efe2055a6be82d1f94"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3014,8 +3012,6 @@ dependencies = [
 [[package]]
 name = "v_exchanges_adapters"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcb8be34d40a3c70b0910a6a09a2d19c2c63337d6673a87df49c6593132db3ca"
 dependencies = [
  "derive-new",
  "derive_more",
@@ -3035,8 +3031,6 @@ dependencies = [
 [[package]]
 name = "v_exchanges_api_generics"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7428e6296688f23e6ae306840e5949b69a9e001e86a54dc2ba21080996d157c0"
 dependencies = [
  "bytes",
  "futures-util",
@@ -3053,8 +3047,6 @@ dependencies = [
 [[package]]
 name = "v_utils"
 version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbf0369e7e3a0cc735263f1608e10a842c38272cc1bec5fcd95a3b9ff96f9499"
 dependencies = [
  "chrono",
  "console-subscriber",
@@ -3082,8 +3074,6 @@ dependencies = [
 [[package]]
 name = "v_utils_macros"
 version = "2.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be14757642f6c4828b716067ed522b0df4bd17c70e3310bf83b199c3ddc36297"
 dependencies = [
  "eyre",
  "heck",

@@ -60,6 +60,10 @@
 
               cargoLock.lockFile = ./Cargo.lock;
               src = pkgs.lib.cleanSource ./.;
+
+              shellHook = ''
+                								notify-send "Building ${manifest.name} ${manifest.version}" #dbg: want to eventually run my script for pre-ci sedding of path `ga` comments
+                							'';
             };
           };
 

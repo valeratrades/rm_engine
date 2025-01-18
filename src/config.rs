@@ -1,8 +1,5 @@
 use color_eyre::eyre::Result;
-use v_utils::{
-	io::{ExpandedPath, Percent},
-	macros::MyConfigPrimitives,
-};
+use v_utils::{Percent, io::ExpandedPath, macros::MyConfigPrimitives};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {
@@ -10,6 +7,7 @@ pub struct AppConfig {
 	pub default_sl: Percent,
 	pub binance: BinanceConfig,
 	pub bybit: BybitConfig,
+	pub mexc: MexcConfig,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -20,6 +18,12 @@ pub struct BinanceConfig {
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct BybitConfig {
+	pub key: String,
+	pub secret: String,
+}
+
+#[derive(Clone, Debug, Default, MyConfigPrimitives)]
+pub struct MexcConfig {
 	pub key: String,
 	pub secret: String,
 }
