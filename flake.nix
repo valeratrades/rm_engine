@@ -64,17 +64,6 @@
                 allowBuiltinFetchGit = true;
               };
               src = pkgs.lib.cleanSource ./.;
-              
-              prePatch = ''
-                set -euo pipefail
-                ls -lA ./.github/workflows
-                chmod +w -R ./
-                HOME=./
-                #cargo -Zscript -q ./.github/workflows/pre_ci_sed_deps.rs
-                ./.github/workflows/test #pre-compiled
-                cat ./Cargo.toml
-                wait $!
-              '';
             };
           };
 
