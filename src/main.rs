@@ -74,12 +74,12 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let time = time_since_comp_move(&config, &*bn, &args, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
-	let target_risk = *config.default_risk_percent_balance * mul;
-	let size = total_balance * (target_risk / *sl_percent);
+	let target_balance_risk = Percent(*config.default_risk_percent_balance * mul);
+	let size = total_balance * *(target_balance_risk / sl_percent);
 
 	dbg!(price, total_balance, time.num_hours(), mul);
-	println!("Chosen SL range: {sl_percent:.1}");
-	println!("Target Risk: {target_risk:.4} of depo ({:.0} usd)", total_balance * target_risk);
+	println!("Chosen SL range: {sl_percent:.2}");
+	println!("Target Risk: {target_balance_risk:.2} of depo ({:.0} usd)", total_balance * *target_balance_risk);
 	println!("\nSize: {size:.2}");
 	Ok(())
 }
