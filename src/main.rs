@@ -9,9 +9,11 @@ use v_exchanges::{
 	binance::Binance,
 	bybit::Bybit,
 	core::Exchange,
+	mexc::Mexc,
 };
 use v_utils::{
-	io::{ExpandedPath, Percent},
+	Percent,
+	io::ExpandedPath,
 	trades::{Pair, Timeframe},
 };
 
@@ -60,6 +62,7 @@ async fn main() {
 async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let mut bn = Binance::default();
 	let mut bb = Bybit::default();
+	let mut mx = Mexc::default();
 	let total_balance = request_total_balance(&config, &mut bn, &mut bb).await;
 	let price = bn.futures_price(args.pair).await.unwrap();
 

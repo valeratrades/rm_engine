@@ -28,15 +28,15 @@ tabs_in_doc_comments = "allow"
 
 [dependencies]
 chrono = "0.4.39"
-clap = { version = "^4.5.23", features = ["derive"] }
+clap = { version = "^4.5.26", features = ["derive"] }
 color-eyre = "^0.6.3"
-config = { version = "^0.15.4" }
+config = { version = "^0.15.6" }
 derive-new = "^0"
 serde = { version = "1.0.217", features = ["derive"] }
-tokio = { version = "1.42.0", features = ["full"] }
-v_exchanges = { version = "^0.2.0", features = ["binance", "bybit"] } #ga: rm path
+tokio = { version = "1.43.0", features = ["full"] }
+v_exchanges = { version = "^0.3.0", features = ["full"] } #ga: rm path
 	#path = "../v_exchanges/v_exchanges",
-v_utils = { features = ["io", "macros", "trades"], version = "^2.0.0" } #ga: rm path
+v_utils = { features = ["io", "macros", "trades"], version = "^2.1.0" } #ga: rm path
 xdg = "2.5.2"
 [dev-dependencies]
 insta = "1.42.0"
