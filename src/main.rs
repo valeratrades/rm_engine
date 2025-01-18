@@ -71,15 +71,16 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 			None => config.default_sl,
 		},
 	};
-	dbg!(sl_percent);
 	let time = time_since_comp_move(&config, &*bn, &args, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let target_risk = *config.default_risk_percent_balance * mul;
 	let size = total_balance * (target_risk / *sl_percent);
 
-	dbg!(price, total_balance, time.num_hours(), target_risk, mul);
-	println!("Size: {size:.2}");
+	dbg!(price, total_balance, time.num_hours(), mul);
+	println!("Chosen SL range: {sl_percent:.1}");
+	println!("Target Risk: {target_risk:.4} of depo ({:.0} usd)", total_balance * target_risk);
+	println!("\nSize: {size:.2}");
 	Ok(())
 }
 
@@ -88,7 +89,6 @@ async fn request_total_balance(bn: &dyn Exchange, bb: &dyn Exchange, mx: &dyn Ex
 	let binance_usdc = bn.asset_balance("USDC".into(), bn.source_market()).await.unwrap();
 	let binance_usdt = bn.asset_balance("USDT".into(), bn.source_market()).await.unwrap();
 
-	dbg!(&bb);
 	let bybit_usdt = bb.asset_balance("USDT".into(), bb.source_market()).await.unwrap();
 	let bybit_usdc = bb.asset_balance("USDC".into(), bb.source_market()).await.unwrap();
 
