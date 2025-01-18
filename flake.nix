@@ -51,18 +51,29 @@
               pname = manifest.name;
               version = manifest.version;
 
+
               buildInputs = with pkgs; [
-                openssl
+                #openssl
                 openssl.dev
               ];
               nativeBuildInputs = with pkgs; [ pkg-config ];
-              env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+              #env.PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
 
-              cargoLock.lockFile = ./Cargo.lock;
+              cargoLock = {
+                lockFile = ./Cargo.lock;
+                allowBuiltinFetchGit = true;
+              };
               src = pkgs.lib.cleanSource ./.;
-
-              shellHook = ''
-                notify-send "Building ${manifest.name} ${manifest.version}" #dbg: want to eventually run my script for pre-ci sedding of path `ga` comments
+              
+              prePatch = ''
+                set -euo pipefail
+                ls -lA ./.github/workflows
+                chmod +w -R ./
+                HOME=./
+                #cargo -Zscript -q ./.github/workflows/pre_ci_sed_deps.rs
+                ./.github/workflows/test #pre-compiled
+                cat ./Cargo.toml
+                wait $!
               '';
             };
           };
