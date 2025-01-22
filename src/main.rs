@@ -2,14 +2,9 @@ use chrono::{DateTime, TimeDelta, Utc};
 use clap::{Args, Parser, Subcommand};
 use color_eyre::eyre::{Result, bail};
 pub mod config;
-
 use config::AppConfig;
 use v_exchanges::{core::Exchange, prelude::*};
-use v_utils::{
-	Percent,
-	io::ExpandedPath,
-	trades::{Kline, Pair, Timeframe},
-};
+use v_utils::prelude_clientside::*;
 
 #[derive(Parser, Default)]
 #[command(author, version, about, long_about = None)]
@@ -40,6 +35,7 @@ struct SizeArgs {
 
 #[tokio::main]
 async fn main() {
+	clientside!();
 	let cli = Cli::parse();
 	let config = match AppConfig::read(cli.config) {
 		Ok(config) => config,
@@ -61,7 +57,16 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let mut mx = AbsMarket::from("Mexc/Futures").client();
 	mx.auth(config.mexc.key.clone(), config.mexc.secret.clone());
 
-	let total_balance = request_total_balance(&*bn, &*bb, &*mx).await;
+	//let total_balance = request_total_balance(&*bn, &*bb, &*mx).await;
+	async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
+		let mut total = Usd(0.);
+		for c in clients {
+			let balances = c.balances(c.source_market()).await.unwrap();
+			total += balances.total;
+		}
+		Ok(total)
+	}
+	let total_balance = request_total_balances(&[&*bn, &*bb, &*mx]).await?;
 	let price = bn.price(args.pair, "Binance/Futures".into()).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
@@ -75,27 +80,13 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 
 	let mul = mul_criterion(time);
 	let target_balance_risk = Percent(*config.default_risk_percent_balance * mul);
-	let size = total_balance * *(target_balance_risk / sl_percent);
+	let size = *total_balance * *(target_balance_risk / sl_percent);
 
 	dbg!(price, total_balance, time.num_hours(), mul);
-	println!("Chosen SL range: {sl_percent:.2}");
-	println!("Target Risk: {target_balance_risk:.2} of depo ({:.0} usd)", total_balance * *target_balance_risk);
+	println!("Chosen SL range: {sl_percent}");
+	println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
 	println!("\nSize: {size:.2}");
 	Ok(())
-}
-
-async fn request_total_balance(bn: &dyn Exchange, bb: &dyn Exchange, mx: &dyn Exchange) -> f64 {
-	//TODO!!!!!: generalize to get a) all assets, b) their usd values, not notional
-	let binance_usdc = bn.asset_balance("USDC".into(), bn.source_market()).await.unwrap();
-	let binance_usdt = bn.asset_balance("USDT".into(), bn.source_market()).await.unwrap();
-
-	let bybit_usdt = bb.asset_balance("USDT".into(), bb.source_market()).await.unwrap();
-	let bybit_usdc = bb.asset_balance("USDC".into(), bb.source_market()).await.unwrap();
-
-	let mexc_usdt = mx.asset_balance("USDT".into(), mx.source_market()).await.unwrap();
-
-	//HACK: in actuality get in usdt for now, assume 1:1 with usd
-	*binance_usdc + *binance_usdt + *bybit_usdt + *bybit_usdc + *mexc_usdt
 }
 
 /// Returns EMA over previous 10 last moves of the same distance.
