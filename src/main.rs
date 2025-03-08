@@ -6,7 +6,7 @@ use config::AppConfig;
 use v_exchanges::{core::Exchange, prelude::*};
 use v_utils::prelude_clientside::*;
 
-#[derive(Parser, Default)]
+#[derive(Default, Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
 	#[command(subcommand)]

@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Result, WrapErr as _};
 use v_utils::{Percent, io::ExpandedPath, macros::MyConfigPrimitives};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -8,6 +8,12 @@ pub struct AppConfig {
 	pub binance: BinanceConfig,
 	pub bybit: BybitConfig,
 	pub mexc: MexcConfig,
+}
+
+#[derive(Clone, Debug, Default, MyConfigPrimitives)]
+pub struct BinanceConfig {
+	pub key: String,
+	pub secret: String,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -52,13 +58,7 @@ impl AppConfig {
 				}
 				let raw: config::Config = builder.build()?;
 
-				match raw.try_deserialize() {
-					Ok(config) => Ok(config),
-					Err(e) => {
-						eprintln!("Config file does not exist or is invalid:");
-						Err(e.into())
-					}
-				}
+				raw.try_deserialize().wrap_err("Config file does not exist or is invalid")
 			}
 		}
 	}
