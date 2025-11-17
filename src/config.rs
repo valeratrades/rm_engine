@@ -9,6 +9,7 @@ pub struct AppConfig {
 	pub risk_tiers: RiskTiers,
 	pub default_sl: Percent,
 	pub exchanges: Vec<ExchangeConfig>,
+	pub other_balances: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]

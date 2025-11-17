@@ -117,7 +117,12 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	}
 
 	let exchange_refs: Vec<&dyn Exchange> = exchanges.iter().map(|e| e.as_ref()).collect();
-	let total_balance = request_total_balances(&exchange_refs).await?;
+	let mut total_balance = request_total_balances(&exchange_refs).await?;
+
+	// Add other balances if configured
+	if let Some(other) = config.other_balances {
+		total_balance = Usd(*total_balance + other);
+	}
 
 	// Use the first exchange for price lookup (could be made configurable based on ticker.exchange_name)
 	let price = exchanges[0].price(ticker.symbol, None).await.unwrap();

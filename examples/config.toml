@@ -1,5 +1,8 @@
 default_sl = 0.02
 
+# Optional: Add balances not tracked on exchanges (in USD)
+# other_balances = 1000.0
+
 [risk_tiers]
 a = "20%"
 b = "8%"
