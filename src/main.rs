@@ -37,12 +37,16 @@ impl Default for Commands {
 	}
 }
 
+fn parse_f64_with_underscores(s: &str) -> Result<f64, std::num::ParseFloatError> {
+	s.replace('_', "").parse()
+}
+
 #[derive(Args, Debug)]
 struct SizeArgs {
 	ticker: String,
 	#[arg(short, long)]
 	quality: Quality,
-	#[arg(short, long)]
+	#[arg(short, long, value_parser = parse_f64_with_underscores)]
 	exact_sl: Option<f64>,
 	#[arg(short, long)]
 	percent_sl: Option<Percent>,
@@ -78,14 +82,31 @@ async fn main() {
 async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let ticker: Ticker = args.ticker.parse()?;
 
-	let mut bn = Binance::default();
-	bn.auth(config.binance.key.clone(), config.binance.secret.clone());
-	let mut bb = Bybit::default();
-	bb.auth(config.bybit.key.clone(), config.bybit.secret.clone());
-	let mut mx = Mexc::default();
-	mx.auth(config.mexc.key.clone(), config.mexc.secret.clone());
+	// Initialize exchanges from config
+	let mut exchanges: Vec<Box<dyn Exchange>> = Vec::new();
+	for exchange_config in &config.exchanges {
+		match exchange_config.name.to_lowercase().as_str() {
+			"binance" => {
+				let mut bn = Binance::default();
+				bn.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+				exchanges.push(Box::new(bn));
+			}
+			"bybit" => {
+				let mut bb = Bybit::default();
+				bb.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+				exchanges.push(Box::new(bb));
+			}
+			"mexc" => {
+				let mut mx = Mexc::default();
+				mx.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+				exchanges.push(Box::new(mx));
+			}
+			_ => {
+				eprintln!("Unknown exchange: {}", exchange_config.name);
+			}
+		}
+	}
 
-	//let total_balance = request_total_balance(&*bn, &*bb, &*mx).await;
 	async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
 		let mut total = Usd(0.);
 		for c in clients {
@@ -94,8 +115,12 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		}
 		Ok(total)
 	}
-	let total_balance = request_total_balances(&[&bn, &bb, &mx]).await?;
-	let price = bn.price(ticker.symbol, None).await.unwrap();
+
+	let exchange_refs: Vec<&dyn Exchange> = exchanges.iter().map(|e| e.as_ref()).collect();
+	let total_balance = request_total_balances(&exchange_refs).await?;
+
+	// Use the first exchange for price lookup (could be made configurable based on ticker.exchange_name)
+	let price = exchanges[0].price(ticker.symbol, None).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -104,7 +129,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 			None => config.default_sl,
 		},
 	};
-	let time = ema_prev_times_for_same_move(&config, &bn, ticker.symbol, price, sl_percent).await?;
+	let time = ema_prev_times_for_same_move(&config, exchanges[0].as_ref(), ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let quality_risk = match args.quality {

@@ -6,9 +6,7 @@ use v_utils::{Percent, io::ExpandedPath, macros::MyConfigPrimitives};
 pub struct AppConfig {
 	pub risk_tiers: RiskTiers,
 	pub default_sl: Percent,
-	pub binance: BinanceConfig,
-	pub bybit: BybitConfig,
-	pub mexc: MexcConfig,
+	pub exchanges: Vec<ExchangeConfig>,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -20,20 +18,9 @@ pub struct RiskTiers {
 	pub e: Percent,
 }
 
-#[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct BinanceConfig {
-	pub key: String,
-	pub secret: SecretString,
-}
-
-#[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct BybitConfig {
-	pub key: String,
-	pub secret: SecretString,
-}
-
-#[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct MexcConfig {
+#[derive(Clone, Debug, MyConfigPrimitives)]
+pub struct ExchangeConfig {
+	pub name: String,
 	pub key: String,
 	pub secret: SecretString,
 }

@@ -8,14 +8,17 @@ c = "3%"
 d = "1%"
 e = "0.25%"
 
-[binance]
+[[exchanges]]
+name = "binance"
 key = { env = "BINANCE_TIGER_FULL_PUBKEY" }
 secret = { env = "BINANCE_TIGER_FULL_SECRET" }
 
-[bybit]
+[[exchanges]]
+name = "bybit"
 key = { env = "QUANTM_BYBIT_SUB_PUBKEY" }
 secret = { env = "QUANTM_BYBIT_SUB_SECRET" }
 
-[mexc]
+[[exchanges]]
+name = "mexc"
 key = { env = "MEXC_READ_PUBKEY" }
 secret = { env = "MEXC_READ_SECRET" }
