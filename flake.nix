@@ -4,84 +4,89 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
-    workflow-parts.url = "github:valeratrades/.github?dir=.github/workflows/nix-parts";
-    hooks.url = "github:valeratrades/.github?dir=hooks";
+    v-utils.url = "github:valeratrades/.github";
   };
 
-  outputs = { nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, workflow-parts, hooks, ... }:
+  outputs = { nixpkgs, rust-overlay, flake-utils, pre-commit-hooks, v-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = builtins.trace "flake.nix sourced" [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        checks = {
-          pre-commit-check = pre-commit-hooks.lib.${system}.run {
-            src = ./.;
-            hooks = {
-              treefmt = {
-                enable = true;
-                settings = {
-                  #BUG: this option does NOTHING
-                  fail-on-change = false; # that's GHA's job, pre-commit hooks stricty *do*
-                  formatters = with pkgs; [
-                    nixpkgs-fmt
-                  ];
-                };
-              };
-            };
-          };
+        rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+          extensions = [ "rust-src" "rust-analyzer" "rust-docs" "rustc-codegen-cranelift-preview" ];
+        });
+        pre-commit-check = pre-commit-hooks.lib.${system}.run (v-utils.files.preCommit { inherit pkgs; });
+        manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+        pname = manifest.name;
+        stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
+
+        workflowContents = v-utils.ci {
+          inherit pkgs;
+          lastSupportedVersion = "nightly-2025-10-12";
+          jobsErrors = [ "rust-tests" ];
+          jobsWarnings = [ "rust-doc" "rust-clippy" "rust-machete" "rust-sorted" "rust-sorted-derives" "tokei" ];
+          jobsOther = [ "loc-badge" ];
         };
-        workflowContents = (import ./.github/workflows/ci.nix) { inherit pkgs workflow-parts; };
+        readme = v-utils.readme-fw { inherit pkgs pname; lastSupportedVersion = "nightly-1.92"; rootDir = ./.; licenses = [{ name = "Blue Oak 1.0.0"; outPath = "LICENSE"; }]; badges = [ "msrv" "crates_io" "docs_rs" "loc" "ci" ]; };
       in
       {
         packages =
           let
-            manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-            rust = (pkgs.rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml);
             rustc = rust;
             cargo = rust;
-            stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
             rustPlatform = pkgs.makeRustPlatform {
               inherit rustc cargo stdenv;
             };
           in
           {
             default = rustPlatform.buildRustPackage rec {
-              pname = manifest.name;
+              inherit pname;
               version = manifest.version;
-
 
               buildInputs = with pkgs; [
                 openssl.dev
               ];
               nativeBuildInputs = with pkgs; [ pkg-config ];
 
-              cargoLock = {
-                lockFile = ./Cargo.lock;
-                allowBuiltinFetchGit = true;
-              };
+              cargoLock.lockFile = ./Cargo.lock;
               src = pkgs.lib.cleanSource ./.;
             };
           };
 
         devShells.default = with pkgs; mkShell {
           inherit stdenv;
-          shellHook = checks.pre-commit-check.shellHook + ''
-            rm -f ./.github/workflows/errors.yml; cp ${workflowContents.errors} ./.github/workflows/errors.yml
-            rm -f ./.github/workflows/warnings.yml; cp ${workflowContents.warnings} ./.github/workflows/warnings.yml
+          shellHook =
+            pre-commit-check.shellHook +
+            workflowContents.shellHook +
+            ''
+              							cp -f ${v-utils.files.licenses.blue_oak} ./LICENSE
 
-            cargo -Zscript -q ${hooks.appendCustom} ./.git/hooks/pre-commit
-            cp -f ${(import hooks.treefmt {inherit pkgs;})} ./.treefmt.toml
-          '';
+              							cargo -Zscript -q ${v-utils.hooks.appendCustom} ./.git/hooks/pre-commit
+              							cp -f ${(v-utils.hooks.treefmt) {inherit pkgs;}} ./.treefmt.toml
+              							cp -f ${(v-utils.hooks.preCommit) { inherit pkgs pname; }} ./.git/hooks/custom.sh
+
+              							mkdir -p ./.cargo
+              							cp -f ${(v-utils.files.rust.rustfmt {inherit pkgs;})} ./rustfmt.toml
+              							cp -f ${(v-utils.files.rust.config {inherit pkgs;})} ./.cargo/config.toml
+              							cp -f ${(v-utils.files.gitignore { inherit pkgs; langs = ["rs"];})} ./.gitignore
+
+              							cp -f ${readme} ./README.md
+              						'';
+
+          env = {
+            RUST_BACKTRACE = 1;
+            RUST_LIB_BACKTRACE = 0;
+          };
+
           packages = [
             mold-wrapped
             openssl
             pkg-config
-            (rust-bin.fromRustupToolchainFile ./.cargo/rust-toolchain.toml)
-          ] ++ checks.pre-commit-check.enabledPackages;
+            rust
+          ] ++ pre-commit-check.enabledPackages;
         };
       }
     );
 }
-

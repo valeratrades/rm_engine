@@ -24,7 +24,7 @@ impl Default for Commands {
 	}
 }
 
-#[derive(Debug, Args, Default)]
+#[derive(Args, Debug, Default)]
 struct SizeArgs {
 	pair: Pair,
 	#[arg(short, long)]
