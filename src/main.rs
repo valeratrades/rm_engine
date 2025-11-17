@@ -3,11 +3,12 @@ use color_eyre::eyre::{Result, bail};
 use jiff::{Span, Timestamp, Unit};
 pub mod config;
 use config::AppConfig;
+use tracing::debug;
 use v_exchanges::{
-	core::{Exchange, Instrument, Symbol},
+	core::{Exchange, Instrument, Ticker},
 	prelude::*,
 };
-use v_utils::{Percent, clientside, io::ExpandedPath, trades::*};
+use v_utils::{Percent, io::ExpandedPath, trades::*};
 
 #[derive(Default, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -29,7 +30,7 @@ impl Default for Commands {
 
 #[derive(Args, Debug, Default)]
 struct SizeArgs {
-	symbol: Symbol,
+	ticker: String,
 	#[arg(short, long)]
 	exact_sl: Option<f64>,
 	#[arg(short, long)]
@@ -38,7 +39,7 @@ struct SizeArgs {
 
 #[tokio::main]
 async fn main() {
-	clientside!();
+	v_utils::clientside!();
 	let cli = Cli::parse();
 	let config = match AppConfig::read(cli.config) {
 		Ok(config) => config,
@@ -53,6 +54,8 @@ async fn main() {
 }
 
 async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
+	let ticker: Ticker = args.ticker.parse()?;
+
 	let mut bn = Binance::default();
 	bn.auth(config.binance.key.clone(), config.binance.secret.clone());
 	let mut bb = Bybit::default();
@@ -70,7 +73,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		Ok(total)
 	}
 	let total_balance = request_total_balances(&[&bn, &bb, &mx]).await?;
-	let price = bn.price(args.symbol, None).await.unwrap();
+	let price = bn.price(ticker.symbol, None).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -79,14 +82,14 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 			None => config.default_sl,
 		},
 	};
-	let time = ema_prev_times_for_same_move(&config, &bn, &args, price, sl_percent).await?;
+	let time = ema_prev_times_for_same_move(&config, &bn, ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let target_balance_risk = Percent(*config.default_risk_percent_balance * mul);
 	let size = *total_balance * *(target_balance_risk / sl_percent);
 
 	let hours = (time.total(Unit::Second).unwrap() as i64 / 3600) as f64;
-	dbg!(price, total_balance, hours, mul);
+	debug!(?price, ?total_balance, ?hours, ?mul);
 	println!("Chosen SL range: {sl_percent}");
 	println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
 	println!("\nSize: {size:.2}");
@@ -94,7 +97,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 }
 
 /// Returns EMA over previous 10 last moves of the same distance.
-async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, args: &SizeArgs, price: f64, sl_percent: Percent) -> Result<Span> {
+async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, symbol: v_exchanges::core::Symbol, price: f64, sl_percent: Percent) -> Result<Span> {
 	static RUN_TIMES: usize = 10;
 	let calc_range = |price: f64, sl_percent: Percent| {
 		let sl = price * *sl_percent;
@@ -121,7 +124,7 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, ar
 	let mut approx_correct_tf: Option<Timeframe> = None;
 	for tf in preset_timeframes {
 		if approx_correct_tf.is_none() {
-			let klines = bn.klines(args.symbol, tf, 1000.into(), None).await.unwrap();
+			let klines = bn.klines(symbol, tf, 1000.into(), None).await.unwrap();
 			for k in klines.iter().rev() {
 				match check_if_satisfies(k, &mut times, &mut prev_time) {
 					true => {
@@ -138,7 +141,7 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, ar
 	let mut i = 0;
 	while times.len() < RUN_TIMES && i < 10 {
 		let request_range = (prev_time.checked_sub(tf.duration() * 999).unwrap(), prev_time);
-		let klines = bn.klines(args.symbol, tf, request_range.into(), None).await.unwrap();
+		let klines = bn.klines(symbol, tf, request_range.into(), None).await.unwrap();
 		for k in klines.iter().rev() {
 			match check_if_satisfies(k, &mut times, &mut prev_time) {
 				true =>
@@ -156,12 +159,12 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, ar
 	}
 	// The last is the oldest
 	//let ema = times.iter().fold(0, |acc, x| acc + x.num_seconds()) / times.len() as i64;
-	dbg!(&times);
+	debug!(?times);
 	let ema = times.iter().enumerate().fold(0_i64, |acc: i64, (i, x): (usize, &Span)| {
 		(acc + x.total(Unit::Second).unwrap() as i64 * (i as i64 + 1)).try_into().unwrap()
 	}) as f64
 		/ ((times.len() + 1) as f64 * times.len() as f64 / 2.0);
-	dbg!(&ema);
+	debug!(?ema);
 	Ok(Span::new().seconds(ema as i64))
 }
 

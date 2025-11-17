@@ -1803,6 +1803,7 @@ dependencies = [
  "secrecy",
  "serde",
  "tokio",
+ "tracing",
  "v_exchanges",
  "v_utils",
  "xdg",
