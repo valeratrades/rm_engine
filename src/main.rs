@@ -1,13 +1,12 @@
+use std::str::FromStr;
+
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::{Result, bail};
 use jiff::{Span, Timestamp, Unit};
 pub mod config;
 use config::AppConfig;
 use tracing::debug;
-use v_exchanges::{
-	core::{Exchange, Instrument, Ticker},
-	prelude::*,
-};
+use v_exchanges::core::{Exchange, ExchangeName, Instrument, Ticker};
 use v_utils::{Percent, io::ExpandedPath, trades::*};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, ValueEnum)]
@@ -85,26 +84,10 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	// Initialize exchanges from config
 	let mut exchanges: Vec<Box<dyn Exchange>> = Vec::new();
 	for exchange_config in &config.exchanges {
-		match exchange_config.name.to_lowercase().as_str() {
-			"binance" => {
-				let mut bn = Binance::default();
-				bn.auth(exchange_config.key.clone(), exchange_config.secret.clone());
-				exchanges.push(Box::new(bn));
-			}
-			"bybit" => {
-				let mut bb = Bybit::default();
-				bb.auth(exchange_config.key.clone(), exchange_config.secret.clone());
-				exchanges.push(Box::new(bb));
-			}
-			"mexc" => {
-				let mut mx = Mexc::default();
-				mx.auth(exchange_config.key.clone(), exchange_config.secret.clone());
-				exchanges.push(Box::new(mx));
-			}
-			_ => {
-				eprintln!("Unknown exchange: {}", exchange_config.name);
-			}
-		}
+		let exchange_name = ExchangeName::from_str(&exchange_config.name)?;
+		let mut exchange = exchange_name.init_client();
+		exchange.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+		exchanges.push(exchange);
 	}
 
 	async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
