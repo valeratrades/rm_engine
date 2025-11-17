@@ -1,4 +1,5 @@
 use color_eyre::eyre::{Result, WrapErr as _};
+use secrecy::SecretString;
 use v_utils::{Percent, io::ExpandedPath, macros::MyConfigPrimitives};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
@@ -13,32 +14,26 @@ pub struct AppConfig {
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct BinanceConfig {
 	pub key: String,
-	pub secret: String,
-}
-
-#[derive(Clone, Debug, Default, MyConfigPrimitives)]
-pub struct BinanceConfig {
-	pub key: String,
-	pub secret: String,
+	pub secret: SecretString,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct BybitConfig {
 	pub key: String,
-	pub secret: String,
+	pub secret: SecretString,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct MexcConfig {
 	pub key: String,
-	pub secret: String,
+	pub secret: SecretString,
 }
 
 impl AppConfig {
 	pub fn read(path: Option<ExpandedPath>) -> Result<Self> {
 		let app_name = env!("CARGO_PKG_NAME");
-		let xdg_dirs = xdg::BaseDirectories::with_prefix(app_name).unwrap();
-		let xdg_conf_dir = xdg_dirs.get_config_home().parent().unwrap().display().to_string();
+		let xdg_dirs = xdg::BaseDirectories::with_prefix(app_name);
+		let xdg_conf_dir = xdg_dirs.get_config_home().expect("config home").parent().unwrap().display().to_string();
 
 		let locations = [
 			format!("{xdg_conf_dir}/{app_name}"),
