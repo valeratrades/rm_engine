@@ -1,7 +1,6 @@
 default_sl = 0.02
 
 [risk_tiers]
-# as percentage points
 a = "20%"
 b = "8%"
 c = "3%"
