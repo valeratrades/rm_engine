@@ -87,6 +87,14 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		let exchange_name = ExchangeName::from_str(&exchange_config.name)?;
 		let mut exchange = exchange_name.init_client();
 		exchange.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+		// KuCoin requires a passphrase
+		if exchange_name == ExchangeName::Kucoin {
+			let passphrase = exchange_config
+				.passphrase
+				.clone()
+				.ok_or_else(|| color_eyre::eyre::eyre!("Kucoin exchange requires passphrase in config"))?;
+			exchange.update_default_option(v_exchanges::kucoin::KucoinOption::Passphrase(passphrase));
+		}
 		exchanges.push(exchange);
 	}
 

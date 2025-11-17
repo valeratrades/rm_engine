@@ -26,6 +26,7 @@ pub struct ExchangeConfig {
 	pub name: String,
 	pub key: String,
 	pub secret: SecretString,
+	pub passphrase: Option<SecretString>,
 }
 
 impl AppConfig {

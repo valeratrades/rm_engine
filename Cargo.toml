@@ -29,7 +29,7 @@ secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["full"] }
 tracing = "0.1"
-v_exchanges = { version = "^0.13.3", features = ["binance", "bybit", "mexc"], path = "/home/v/s/v_exchanges/v_exchanges" } #ga: rm path
+v_exchanges = { version = "^0.13.3", features = ["binance", "bybit", "kucoin", "mexc"], path = "/home/v/s/v_exchanges/v_exchanges" } #ga: rm path
 v_utils = { features = ["io", "macros", "trades"], version = "^2", path = "/home/v/s/v_utils/v_utils" } #ga: rm path
 xdg = "3.0.0"
 

@@ -32,5 +32,11 @@
       key.env = "MEXC_READ_PUBKEY";
       secret.env = "MEXC_READ_SECRET";
     }
+    {
+      name = "kucoin";
+      key.env = "KUCOIN_API_PUBKEY";
+      secret.env = "KUCOIN_API_SECRET";
+      passphrase.env = "KUCOIN_API_PASSPHRASE";
+    }
   ];
 }
