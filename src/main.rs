@@ -29,7 +29,7 @@ impl Default for Commands {
 
 #[derive(Args, Debug, Default)]
 struct SizeArgs {
-	pair: Pair,
+	symbol: Symbol,
 	#[arg(short, long)]
 	exact_sl: Option<f64>,
 	#[arg(short, long)]
@@ -70,8 +70,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		Ok(total)
 	}
 	let total_balance = request_total_balances(&[&bn, &bb, &mx]).await?;
-	let symbol: Symbol = format!("{}.P", args.pair).as_str().into();
-	let price = bn.price(symbol, None).await.unwrap();
+	let price = bn.price(args.symbol, None).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -118,12 +117,11 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, ar
 		true
 	};
 
-	let symbol: Symbol = format!("{}.P", args.pair).as_str().into();
 	let preset_timeframes: Vec<Timeframe> = vec!["1m".into(), "1h".into(), "1w".into()];
 	let mut approx_correct_tf: Option<Timeframe> = None;
 	for tf in preset_timeframes {
 		if approx_correct_tf.is_none() {
-			let klines = bn.klines(symbol, tf, 1000.into(), None).await.unwrap();
+			let klines = bn.klines(args.symbol, tf, 1000.into(), None).await.unwrap();
 			for k in klines.iter().rev() {
 				match check_if_satisfies(k, &mut times, &mut prev_time) {
 					true => {
@@ -140,7 +138,7 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, ar
 	let mut i = 0;
 	while times.len() < RUN_TIMES && i < 10 {
 		let request_range = (prev_time.checked_sub(tf.duration() * 999).unwrap(), prev_time);
-		let klines = bn.klines(symbol, tf, request_range.into(), None).await.unwrap();
+		let klines = bn.klines(args.symbol, tf, request_range.into(), None).await.unwrap();
 		for k in klines.iter().rev() {
 			match check_if_satisfies(k, &mut times, &mut prev_time) {
 				true =>
