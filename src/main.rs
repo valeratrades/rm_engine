@@ -10,7 +10,7 @@ use v_exchanges::{
 };
 use v_utils::{Percent, io::ExpandedPath, trades::*};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, ValueEnum)]
 enum Quality {
 	A,
 	B,
