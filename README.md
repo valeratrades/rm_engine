@@ -10,7 +10,7 @@
 
 ## Usage
 ```sh
-rm_engine size binance:btc-usdt.p --percent-sl 2%
+rm_engine size binance:btc-usdt --percent-sl 2%
 ```
 
 ## Roadmap

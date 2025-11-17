@@ -4,11 +4,20 @@ use v_utils::{Percent, io::ExpandedPath, macros::MyConfigPrimitives};
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]
 pub struct AppConfig {
-	pub default_risk_percent_balance: Percent,
+	pub risk_tiers: RiskTiers,
 	pub default_sl: Percent,
 	pub binance: BinanceConfig,
 	pub bybit: BybitConfig,
 	pub mexc: MexcConfig,
+}
+
+#[derive(Clone, Debug, Default, MyConfigPrimitives)]
+pub struct RiskTiers {
+	pub a: Percent,
+	pub b: Percent,
+	pub c: Percent,
+	pub d: Percent,
+	pub e: Percent,
 }
 
 #[derive(Clone, Debug, Default, MyConfigPrimitives)]

@@ -1,5 +1,12 @@
-default_risk_percent_balance = 0.01
 default_sl = 0.02
+
+[risk_tiers]
+# as percentage points
+a = "20%"
+b = "8%"
+c = "3%"
+d = "1%"
+e = "0.25%"
 
 [binance]
 key = { env = "BINANCE_TIGER_FULL_PUBKEY" }

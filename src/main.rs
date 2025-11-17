@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::{Result, bail};
 use jiff::{Span, Timestamp, Unit};
 pub mod config;
@@ -9,6 +9,15 @@ use v_exchanges::{
 	prelude::*,
 };
 use v_utils::{Percent, io::ExpandedPath, trades::*};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Quality {
+	A,
+	B,
+	C,
+	D,
+	E,
+}
 
 #[derive(Default, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -28,13 +37,26 @@ impl Default for Commands {
 	}
 }
 
-#[derive(Args, Debug, Default)]
+#[derive(Args, Debug)]
 struct SizeArgs {
 	ticker: String,
+	#[arg(short, long)]
+	quality: Quality,
 	#[arg(short, long)]
 	exact_sl: Option<f64>,
 	#[arg(short, long)]
 	percent_sl: Option<Percent>,
+}
+
+impl Default for SizeArgs {
+	fn default() -> Self {
+		Self {
+			ticker: String::new(),
+			quality: Quality::C,
+			exact_sl: None,
+			percent_sl: None,
+		}
+	}
 }
 
 #[tokio::main]
@@ -85,11 +107,19 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let time = ema_prev_times_for_same_move(&config, &bn, ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
-	let target_balance_risk = Percent(*config.default_risk_percent_balance * mul);
+	let quality_risk = match args.quality {
+		Quality::A => config.risk_tiers.a,
+		Quality::B => config.risk_tiers.b,
+		Quality::C => config.risk_tiers.c,
+		Quality::D => config.risk_tiers.d,
+		Quality::E => config.risk_tiers.e,
+	};
+	let target_balance_risk = Percent(*quality_risk * mul);
 	let size = *total_balance * *(target_balance_risk / sl_percent);
 
 	let hours = (time.total(Unit::Second).unwrap() as i64 / 3600) as f64;
 	debug!(?price, ?total_balance, ?hours, ?mul);
+	println!("Total Depo: {total_balance}$");
 	println!("Chosen SL range: {sl_percent}");
 	println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
 	println!("\nSize: {size:.2}");
