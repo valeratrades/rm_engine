@@ -102,6 +102,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		let mut total = Usd(0.);
 		for c in clients {
 			let balances = c.balances(Instrument::Perp, None).await.unwrap();
+			tracing::debug!("Per-Exchange balances: {c:?}: {balances:?}");
 			total += balances.total;
 		}
 		Ok(total)
