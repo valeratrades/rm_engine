@@ -29,6 +29,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
 	Size(SizeArgs),
+	Balance,
 }
 impl Default for Commands {
 	fn default() -> Self {
@@ -75,13 +76,11 @@ async fn main() {
 	};
 	match cli.command {
 		Commands::Size(args) => start(config, args).await.unwrap(),
+		Commands::Balance => show_balance(config).await.unwrap(),
 	}
 }
 
-async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
-	let ticker: Ticker = args.ticker.parse()?;
-
-	// Initialize exchanges from config
+fn initialize_exchanges(config: &AppConfig) -> Result<Vec<Box<dyn Exchange>>> {
 	let mut exchanges: Vec<Box<dyn Exchange>> = Vec::new();
 	for exchange_config in &config.exchanges {
 		let exchange_name = ExchangeName::from_str(&exchange_config.name)?;
@@ -97,17 +96,20 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		}
 		exchanges.push(exchange);
 	}
+	Ok(exchanges)
+}
 
-	async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
-		let mut total = Usd(0.);
-		for c in clients {
-			let balances = c.balances(Instrument::Perp, None).await.unwrap();
-			tracing::debug!("Per-Exchange balances: {c:?}: {balances:?}");
-			total += balances.total;
-		}
-		Ok(total)
+async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
+	let mut total = Usd(0.);
+	for c in clients {
+		let balances = c.balances(Instrument::Perp, None).await.unwrap();
+		tracing::debug!("Per-Exchange balances: {c:?}: {balances:?}");
+		total += balances.total;
 	}
+	Ok(total)
+}
 
+async fn get_total_balance(config: &AppConfig, exchanges: &[Box<dyn Exchange>]) -> Result<Usd> {
 	let exchange_refs: Vec<&dyn Exchange> = exchanges.iter().map(|e| e.as_ref()).collect();
 	let mut total_balance = request_total_balances(&exchange_refs).await?;
 
@@ -115,6 +117,22 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	if let Some(other) = config.other_balances {
 		total_balance = Usd(*total_balance + other);
 	}
+
+	Ok(total_balance)
+}
+
+async fn show_balance(config: AppConfig) -> Result<()> {
+	let exchanges = initialize_exchanges(&config)?;
+	let total_balance = get_total_balance(&config, &exchanges).await?;
+	println!("{total_balance}$");
+	Ok(())
+}
+
+async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
+	let ticker: Ticker = args.ticker.parse()?;
+
+	let exchanges = initialize_exchanges(&config)?;
+	let total_balance = get_total_balance(&config, &exchanges).await?;
 
 	// Use the first exchange for price lookup (could be made configurable based on ticker.exchange_name)
 	let price = exchanges[0].price(ticker.symbol, None).await.unwrap();
