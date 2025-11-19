@@ -23,7 +23,8 @@ pub struct RiskTiers {
 
 #[derive(Clone, Debug, MyConfigPrimitives)]
 pub struct ExchangeConfig {
-	pub name: String,
+	pub exch_name: String,
+	pub tag: Option<String>,
 	pub key: String,
 	pub secret: SecretString,
 	pub passphrase: Option<SecretString>,
@@ -42,17 +43,17 @@ impl AppConfig {
 
 		let mut builder = config::Config::builder().add_source(config::Environment::default());
 
-		match path {
+		let config = match path {
 			Some(path) => {
 				let path_str = path.to_string();
 				if path_str.ends_with(".nix") {
 					// Evaluate .nix file to JSON
 					let json_str = Self::eval_nix_file(&path_str)?;
 					let builder = builder.add_source(config::File::from_str(&json_str, config::FileFormat::Json));
-					Ok(builder.build()?.try_deserialize()?)
+					builder.build()?.try_deserialize()?
 				} else {
 					let builder = builder.add_source(config::File::with_name(&path_str).required(true));
-					Ok(builder.build()?.try_deserialize()?)
+					builder.build()?.try_deserialize()?
 				}
 			}
 			None => {
@@ -61,18 +62,54 @@ impl AppConfig {
 				if std::path::Path::new(&nix_path).exists() {
 					let json_str = Self::eval_nix_file(&nix_path)?;
 					let builder = builder.add_source(config::File::from_str(&json_str, config::FileFormat::Json));
-					return Ok(builder.build()?.try_deserialize()?);
-				}
+					builder.build()?.try_deserialize()?
+				} else {
+					// Fall back to TOML and other formats
+					for location in locations.iter() {
+						builder = builder.add_source(config::File::with_name(location).required(false));
+					}
+					let raw: config::Config = builder.build()?;
 
-				// Fall back to TOML and other formats
-				for location in locations.iter() {
-					builder = builder.add_source(config::File::with_name(location).required(false));
+					raw.try_deserialize().wrap_err("Config file does not exist or is invalid")?
 				}
-				let raw: config::Config = builder.build()?;
+			}
+		};
 
-				raw.try_deserialize().wrap_err("Config file does not exist or is invalid")
+		Self::validate(&config)?;
+		Ok(config)
+	}
+
+	fn validate(config: &Self) -> Result<()> {
+		// Check if any exch_name appears more than once
+		let mut exch_name_counts = std::collections::HashMap::new();
+		for exchange in &config.exchanges {
+			*exch_name_counts.entry(&exchange.exch_name).or_insert(0) += 1;
+		}
+
+		// If any exch_name appears more than once, all instances must have tags
+		let has_duplicates = exch_name_counts.values().any(|&count| count > 1);
+		if has_duplicates {
+			let mut seen_keys = std::collections::HashSet::new();
+			for exchange in &config.exchanges {
+				// Only check exchanges that have duplicate exch_names
+				if exch_name_counts[&exchange.exch_name] > 1 {
+					match &exchange.tag {
+						None => bail!(
+							"Exchange '{}' appears multiple times. All instances of '{}' must have a 'tag' field",
+							exchange.exch_name,
+							exchange.exch_name
+						),
+						Some(tag) => {
+							let key = format!("{}_{}", exchange.exch_name, tag);
+							if !seen_keys.insert(key.clone()) {
+								bail!("Duplicate key '{}' found. All exchname_tag combinations must be unique", key);
+							}
+						}
+					}
+				}
 			}
 		}
+		Ok(())
 	}
 
 	fn eval_nix_file(path: &str) -> Result<String> {

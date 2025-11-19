@@ -11,23 +11,27 @@ d = "1%"
 e = "0.25%"
 
 [[exchanges]]
-name = "binance"
+exch_name = "binance"
+tag = "tiger_full"
 key = { env = "BINANCE_TIGER_FULL_PUBKEY" }
 secret = { env = "BINANCE_TIGER_FULL_SECRET" }
 
 [[exchanges]]
-name = "bybit"
+exch_name = "bybit"
+tag = "quantm_sub"
 key = { env = "QUANTM_BYBIT_SUB_PUBKEY" }
 secret = { env = "QUANTM_BYBIT_SUB_SECRET" }
 
 [[exchanges]]
-name = "mexc"
+exch_name = "mexc"
+tag = "read"
 key = { env = "MEXC_READ_PUBKEY" }
 secret = { env = "MEXC_READ_SECRET" }
 
 # Example KuCoin config (requires passphrase)
 # [[exchanges]]
-# name = "kucoin"
+# exch_name = "kucoin"
+# tag = "main"
 # key = { env = "KUCOIN_API_KEY" }
 # secret = { env = "KUCOIN_API_SECRET" }
 # passphrase = { env = "KUCOIN_API_PASSPHRASE" }

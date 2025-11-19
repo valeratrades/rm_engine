@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::{Result, bail};
@@ -80,10 +80,15 @@ async fn main() {
 	}
 }
 
-fn initialize_exchanges(config: &AppConfig) -> Result<Vec<Box<dyn Exchange>>> {
-	let mut exchanges: Vec<Box<dyn Exchange>> = Vec::new();
+struct InitializedExchange {
+	exchange: Box<dyn Exchange>,
+	key: String,
+}
+
+fn initialize_exchanges(config: &AppConfig) -> Result<Vec<InitializedExchange>> {
+	let mut exchanges: Vec<InitializedExchange> = Vec::new();
 	for exchange_config in &config.exchanges {
-		let exchange_name = ExchangeName::from_str(&exchange_config.name)?;
+		let exchange_name = ExchangeName::from_str(&exchange_config.exch_name)?;
 		let mut exchange = exchange_name.init_client();
 		exchange.auth(exchange_config.key.clone(), exchange_config.secret.clone());
 		// KuCoin requires a passphrase
@@ -94,24 +99,33 @@ fn initialize_exchanges(config: &AppConfig) -> Result<Vec<Box<dyn Exchange>>> {
 				.ok_or_else(|| color_eyre::eyre::eyre!("Kucoin exchange requires passphrase in config"))?;
 			exchange.update_default_option(v_exchanges::kucoin::KucoinOption::Passphrase(passphrase));
 		}
-		exchanges.push(exchange);
+
+		// Create key: if tag exists, use "exchname_tag", otherwise just "exchname"
+		let key = match &exchange_config.tag {
+			Some(tag) => format!("{}_{}", exchange_config.exch_name, tag),
+			None => exchange_config.exch_name.clone(),
+		};
+
+		exchanges.push(InitializedExchange { exchange, key });
 	}
 	Ok(exchanges)
 }
 
-async fn request_total_balances(clients: &[&dyn Exchange]) -> Result<Usd> {
-	let mut total = Usd(0.);
-	for c in clients {
-		let balances = c.balances(Instrument::Perp, None).await.unwrap();
-		tracing::debug!("Per-Exchange balances: {c:?}: {balances:?}");
-		total += balances.total;
+async fn collect_balances(exchanges: &[InitializedExchange]) -> Result<HashMap<String, Usd>> {
+	let mut balances = HashMap::new();
+	for init_exch in exchanges {
+		let balance = init_exch.exchange.balances(Instrument::Perp, None).await.unwrap();
+		tracing::debug!("Per-Exchange balances: {:?}: {balance:?}", init_exch.key);
+		balances.insert(init_exch.key.clone(), balance.total);
 	}
-	Ok(total)
+	Ok(balances)
 }
 
-async fn get_total_balance(config: &AppConfig, exchanges: &[Box<dyn Exchange>]) -> Result<Usd> {
-	let exchange_refs: Vec<&dyn Exchange> = exchanges.iter().map(|e| e.as_ref()).collect();
-	let mut total_balance = request_total_balances(&exchange_refs).await?;
+async fn get_total_balance(config: &AppConfig, balances: &HashMap<String, Usd>) -> Result<Usd> {
+	let mut total_balance = Usd(0.);
+	for balance in balances.values() {
+		total_balance += *balance;
+	}
 
 	// Add other balances if configured
 	if let Some(other) = config.other_balances {
@@ -123,8 +137,16 @@ async fn get_total_balance(config: &AppConfig, exchanges: &[Box<dyn Exchange>]) 
 
 async fn show_balance(config: AppConfig) -> Result<()> {
 	let exchanges = initialize_exchanges(&config)?;
-	let total_balance = get_total_balance(&config, &exchanges).await?;
-	println!("{total_balance}$");
+	let balances = collect_balances(&exchanges).await?;
+
+	// Print individual balances
+	for (key, balance) in &balances {
+		println!("{key}: {balance}$");
+	}
+
+	// Print total
+	let total_balance = get_total_balance(&config, &balances).await?;
+	println!("\nTotal: {total_balance}$");
 	Ok(())
 }
 
@@ -132,10 +154,11 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let ticker: Ticker = args.ticker.parse()?;
 
 	let exchanges = initialize_exchanges(&config)?;
-	let total_balance = get_total_balance(&config, &exchanges).await?;
+	let balances = collect_balances(&exchanges).await?;
+	let total_balance = get_total_balance(&config, &balances).await?;
 
 	// Use the first exchange for price lookup (could be made configurable based on ticker.exchange_name)
-	let price = exchanges[0].price(ticker.symbol, None).await.unwrap();
+	let price = exchanges[0].exchange.price(ticker.symbol, None).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -144,7 +167,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 			None => config.default_sl,
 		},
 	};
-	let time = ema_prev_times_for_same_move(&config, exchanges[0].as_ref(), ticker.symbol, price, sl_percent).await?;
+	let time = ema_prev_times_for_same_move(&config, exchanges[0].exchange.as_ref(), ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let quality_risk = match args.quality {
