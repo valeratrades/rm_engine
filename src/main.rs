@@ -139,8 +139,12 @@ async fn show_balance(config: AppConfig) -> Result<()> {
 	let exchanges = initialize_exchanges(&config)?;
 	let balances = collect_balances(&exchanges).await?;
 
+	// Sort balances by value (descending)
+	let mut sorted_balances: Vec<_> = balances.iter().collect();
+	sorted_balances.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap_or(std::cmp::Ordering::Equal));
+
 	// Print individual balances
-	for (key, balance) in &balances {
+	for (key, balance) in sorted_balances {
 		println!("{key}: {balance}$");
 	}
 
