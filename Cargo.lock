@@ -195,9 +195,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.52"
+version = "4.5.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa8120877db0e5c011242f96806ce3c94e0737ab8108532a76a3300a01db2ab8"
+checksum = "c9e340e012a1bf4935f5282ed1436d1489548e8f72308207ea5df0e23d2d03f8"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -205,9 +205,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.52"
+version = "4.5.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02576b399397b659c26064fbc92a75fede9d18ffd5f80ca1cd74ddab167016e1"
+checksum = "d76b5d13eaa18c901fd2f7fca939fefe3a0727a953561fefdf3b2922b8569d00"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1153,9 +1153,9 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "1.43.2"
+version = "1.44.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46fdb647ebde000f43b5b53f773c30cf9b0cb4300453208713fa38b2c70935a0"
+checksum = "e8732d3774162a0851e3f2b150eb98f31a9885dd75985099421d393385a01dfd"
 dependencies = [
  "console",
  "once_cell",
@@ -2654,9 +2654,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "v_exchanges"
-version = "0.14.1"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0c4c07226030ddeeee24f977f26781085cb523816f71112e7aaecc4a1e16f5a"
+checksum = "920aa3417c14a6d39b7ec03f335a0b629d1aab508dae534d2dd71b7d693805b6"
 dependencies = [
  "async-trait",
  "cfg-if",
@@ -2679,9 +2679,9 @@ dependencies = [
 
 [[package]]
 name = "v_exchanges_adapters"
-version = "0.14.1"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98315ced98ea4207ae9610f39b6ca309fd2b70b82e7bb7df51eba1711b4a93fb"
+checksum = "ac87a5eef8ae5b04416597603dad316f624e5d441e3b7d3bb724482ab1460c93"
 dependencies = [
  "base64",
  "derive-new",
@@ -2705,9 +2705,9 @@ dependencies = [
 
 [[package]]
 name = "v_exchanges_api_generics"
-version = "0.16.1"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae1a3a5de44ff8786332aa77449e6246678fa50518500e881e0c4157b0ad3c8e"
+checksum = "c7886f46621be8eb67bc3c2baeaa63eb4bd1f9c515e13da8ed13b0198d4ac997"
 dependencies = [
  "bytes",
  "derive-new",
@@ -2729,9 +2729,9 @@ dependencies = [
 
 [[package]]
 name = "v_utils"
-version = "2.9.2"
+version = "2.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34eb5c48cf4b7ec0aa31feb1cdd6802fcf2aea95f9e85410fbe62a5e7a922668"
+checksum = "4d9bf9ff2e1c7c2ea3c4f8bfc484e0c0585ab2b4e8c666f1c8fb86b1df8a6d34"
 dependencies = [
  "const_format",
  "derive-new",
@@ -2757,9 +2757,9 @@ dependencies = [
 
 [[package]]
 name = "v_utils_macros"
-version = "2.5.2"
+version = "2.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cfd8eeb5d6e42d986e959860519fb56fedcd426c78a892e29ea3f4b0bd2f0d"
+checksum = "5ea9313279c7b35639d84f162635e9598561bf1cf065022faedc381be318cfab"
 dependencies = [
  "eyre",
  "heck",
