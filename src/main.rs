@@ -4,10 +4,10 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::{Result, bail, eyre};
 use jiff::{Span, Timestamp, Unit};
 pub mod config;
-use config::AppConfig;
+use config::{AppConfig, SettingsFlags};
 use tracing::debug;
 use v_exchanges::core::{Exchange, ExchangeName, Instrument, Ticker};
-use v_utils::{Percent, io::ExpandedPath, trades::*};
+use v_utils::{Percent, trades::*};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, ValueEnum)]
 enum Quality {
@@ -23,8 +23,8 @@ enum Quality {
 struct Cli {
 	#[command(subcommand)]
 	command: Commands,
-	#[arg(long)]
-	config: Option<ExpandedPath>,
+	#[command(flatten)]
+	settings: SettingsFlags,
 }
 #[derive(Subcommand)]
 enum Commands {
@@ -67,7 +67,7 @@ impl Default for SizeArgs {
 async fn main() {
 	v_utils::clientside!();
 	let cli = Cli::parse();
-	let config = match AppConfig::read(cli.config) {
+	let config = match AppConfig::try_build_with_validation(cli.settings) {
 		Ok(config) => config,
 		Err(e) => {
 			eprintln!("Error reading config: {e}");
@@ -91,8 +91,8 @@ fn initialize_exchanges(config: &AppConfig) -> Result<Vec<InitializedExchange>> 
 		let exchange_name = ExchangeName::from_str(&exchange_config.exch_name)?;
 		let mut exchange = exchange_name.init_client();
 		exchange.auth(exchange_config.key.clone(), exchange_config.secret.clone());
-		exchange.set_recv_window(std::time::Duration::from_secs(15));
 		exchange.set_max_tries(3);
+		exchange.set_recv_window(std::time::Duration::from_secs(15));
 
 		// special case: KuCoin requires a passphrase
 		if exchange_name == ExchangeName::Kucoin {
