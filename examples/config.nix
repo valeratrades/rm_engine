@@ -1,8 +1,6 @@
 {
   default_sl = 0.02;
-
-  # Optional: Add balances not tracked on exchanges (in USD)
-  # other_balances = 1000.0;
+  round_bias = "5%";
 
   risk_tiers = {
     a = "20%";
@@ -12,6 +10,8 @@
     e = "0.25%";
   };
 
+  # Optional: Add balances not tracked on exchanges (in USD)
+  # other_balances = 1000.0;
   exchanges =
     let
       binance_tiger = "BINANCE_TIGER_FULL"; #dbg: just testing out to see if this is valid

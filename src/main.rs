@@ -7,7 +7,7 @@ pub mod config;
 use config::{AppConfig, SettingsFlags};
 use tracing::debug;
 use v_exchanges::core::{Exchange, ExchangeName, Instrument, Ticker};
-use v_utils::{Percent, trades::*};
+use v_utils::{Percent, percent::PercentU, trades::*};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, ValueEnum)]
 enum Quality {
@@ -186,10 +186,14 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 
 	let hours = (time.total(Unit::Second).unwrap() as i64 / 3600) as f64;
 	debug!(?price, ?total_balance, ?hours, ?mul);
+
+	// Apply round bias
+	let biased_size = apply_round_bias(size, config.round_bias);
+
 	println!("Total Depo: {total_balance}$");
 	println!("Chosen SL range: {sl_percent}");
 	println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
-	println!("\nSize: {size:.2}");
+	println!("\nSize: {biased_size:.2}");
 	Ok(())
 }
 
@@ -265,6 +269,44 @@ async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, sy
 	Ok(Span::new().seconds(ema as i64))
 }
 
+/// Apply rounding bias to skew the result towards rounder numbers.
+/// The bias parameter (default 1%) determines how much to favor round numbers.
+fn apply_round_bias(value: f64, bias: PercentU) -> f64 {
+	if value == 0.0 {
+		return value;
+	}
+
+	// Find the magnitude of the value (e.g., 1234.56 -> 1000)
+	let magnitude = 10_f64.powi(value.abs().log10().floor() as i32);
+
+	// Generate candidate round numbers at different scales
+	let candidates = vec![
+		// Round to nearest 1000, 500, 100, 50, 10, 5, 1
+		(value / (magnitude * 10.0)).round() * (magnitude * 10.0),
+		(value / (magnitude * 5.0)).round() * (magnitude * 5.0),
+		(value / magnitude).round() * magnitude,
+		(value / (magnitude / 2.0)).round() * (magnitude / 2.0),
+		(value / (magnitude / 10.0)).round() * (magnitude / 10.0),
+		(value / (magnitude / 20.0)).round() * (magnitude / 20.0),
+		(value / (magnitude / 100.0)).round() * (magnitude / 100.0),
+	];
+
+	// Find the closest rounder number
+	let closest_round = candidates
+		.iter()
+		.filter(|&&c| c > 0.0)
+		.min_by(|&&a, &&b| {
+			let dist_a = (a - value).abs();
+			let dist_b = (b - value).abs();
+			dist_a.partial_cmp(&dist_b).unwrap_or(std::cmp::Ordering::Equal)
+		})
+		.copied()
+		.unwrap_or(value);
+
+	// Apply bias: move towards the rounder number by the bias percentage
+	value + (closest_round - value) * **bias
+}
+
 fn mul_criterion(time: Span) -> f64 {
 	// 0.1 -> 0.2
 	// 0.5 -> 0.5
@@ -286,6 +328,29 @@ mod tests {
 	use v_utils::utils::SnapshotP;
 
 	use super::*;
+
+	#[test]
+	fn test_apply_round_bias() {
+		// Test with 1% bias (default)
+		let bias = PercentU::new(0.01).unwrap();
+
+		// 1234.5 should move towards 1200 (closer round number)
+		let result = apply_round_bias(1234.5, bias);
+		assert!(result < 1234.5 && result > 1233.0, "Expected value between 1233 and 1234.5, got {}", result);
+
+		// 1250.0 is already round, should stay close
+		let result = apply_round_bias(1250.0, bias);
+		assert!((result - 1250.0).abs() < 1.0, "Expected value close to 1250, got {}", result);
+
+		// Test with higher bias (10%)
+		let bias = PercentU::new(0.10).unwrap();
+		let result = apply_round_bias(1234.5, bias);
+		assert!(result < 1234.5 && result > 1230.0, "Expected larger shift with 10% bias, got {}", result);
+
+		// Test with zero value
+		let result = apply_round_bias(0.0, bias);
+		assert_eq!(result, 0.0, "Zero should remain zero");
+	}
 
 	#[test]
 	fn proper_mul_snapshot_test() {

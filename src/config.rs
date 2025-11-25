@@ -1,12 +1,14 @@
 use color_eyre::eyre::{Result, bail};
 use secrecy::SecretString;
-use v_utils::{Percent, macros as v_macros};
+use v_utils::{Percent, macros as v_macros, percent::PercentU};
 
 #[derive(Clone, Debug, Default, v_macros::MyConfigPrimitives, v_macros::Settings)]
 pub struct AppConfig {
 	#[settings(flatten)]
 	pub risk_tiers: RiskTiers,
 	pub default_sl: Percent,
+	#[settings(default = "PercentU::new(0.01).unwrap()")]
+	pub round_bias: PercentU,
 	pub exchanges: Vec<ExchangeConfig>,
 	pub other_balances: Option<f64>,
 }
