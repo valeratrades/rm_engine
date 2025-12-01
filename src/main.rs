@@ -10,11 +10,20 @@ use v_exchanges::core::{Exchange, ExchangeName, Instrument, Ticker};
 use v_utils::{Percent, percent::PercentU, trades::*};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, ValueEnum)]
+/// Quality of the trade setup
+///
+/// NB: can't choose based on what you feel like, - consult with exact criteria provided for each
+/// NB: after a loss, we force it one step down. Compounds.
 enum Quality {
+	/// clear inefficiency AND entry within a clearly defined strategy AND strategy is historically profitable AND top tier situation within the strategy
 	A,
+	/// clear inefficiency AND entry within a clearly defined strategy AND strategy is historically profitable
 	B,
+	/// (entry within a clearly defined strategy AND strategy is historically profitable) OR (clear inefficiency)
 	C,
+	/// looks good
 	D,
+	/// random test
 	E,
 }
 
@@ -158,6 +167,7 @@ async fn show_balance(config: AppConfig) -> Result<()> {
 }
 
 async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
+	let size_config = config.size.as_ref().ok_or_else(|| eyre!("'size' section missing from config"))?;
 	let ticker: Ticker = args.ticker.parse()?;
 
 	let exchanges = initialize_exchanges(&config)?;
@@ -171,18 +181,18 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		Some(percent) => percent,
 		None => match args.exact_sl {
 			Some(sl) => ((price - sl).abs() / price).into(),
-			None => config.size.default_sl,
+			None => size_config.default_sl,
 		},
 	};
-	let time = ema_prev_times_for_same_move(&config, exchanges[0].exchange.as_ref(), ticker.symbol, price, sl_percent).await?;
+	let time = ema_prev_times_for_same_move(exchanges[0].exchange.as_ref(), ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
 	let quality_risk = match args.quality {
-		Quality::A => config.risk_tiers.a,
-		Quality::B => config.risk_tiers.b,
-		Quality::C => config.risk_tiers.c,
-		Quality::D => config.risk_tiers.d,
-		Quality::E => config.risk_tiers.e,
+		Quality::A => size_config.risk_tiers.a,
+		Quality::B => size_config.risk_tiers.b,
+		Quality::C => size_config.risk_tiers.c,
+		Quality::D => size_config.risk_tiers.d,
+		Quality::E => size_config.risk_tiers.e,
 	};
 	let target_balance_risk = Percent(*quality_risk * mul);
 	let size = *total_balance * *(target_balance_risk / sl_percent);
@@ -191,7 +201,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	debug!(?price, ?total_balance, ?hours, ?mul);
 
 	// Apply round bias
-	let biased_size = apply_round_bias(size, config.size.round_bias);
+	let biased_size = apply_round_bias(size, size_config.round_bias);
 
 	println!("Total Depo: {total_balance}$");
 	println!("Chosen SL range: {sl_percent}");
@@ -201,7 +211,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 }
 
 /// Returns EMA over previous 10 last moves of the same distance.
-async fn ema_prev_times_for_same_move(_config: &AppConfig, bn: &dyn Exchange, symbol: v_exchanges::core::Symbol, price: f64, sl_percent: Percent) -> Result<Span> {
+async fn ema_prev_times_for_same_move(bn: &dyn Exchange, symbol: v_exchanges::core::Symbol, price: f64, sl_percent: Percent) -> Result<Span> {
 	static RUN_TIMES: usize = 10;
 	let calc_range = |price: f64, sl_percent: Percent| {
 		let sl = price * *sl_percent;
