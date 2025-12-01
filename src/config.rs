@@ -6,11 +6,17 @@ use v_utils::{Percent, macros as v_macros, percent::PercentU};
 pub struct AppConfig {
 	#[settings(flatten)]
 	pub risk_tiers: RiskTiers,
+	#[settings(flatten)]
+	pub size: SizeConfig,
+	pub exchanges: Vec<ExchangeConfig>,
+	pub other_balances: Option<f64>,
+}
+
+#[derive(Clone, Debug, Default, v_macros::MyConfigPrimitives, v_macros::SettingsBadlyNested)]
+pub struct SizeConfig {
 	pub default_sl: Percent,
 	#[settings(default = "PercentU::new(0.01).unwrap()")]
 	pub round_bias: PercentU,
-	pub exchanges: Vec<ExchangeConfig>,
-	pub other_balances: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default, v_macros::MyConfigPrimitives, v_macros::SettingsBadlyNested)]

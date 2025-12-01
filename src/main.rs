@@ -71,6 +71,9 @@ async fn main() {
 		Ok(config) => config,
 		Err(e) => {
 			eprintln!("Error reading config: {e}");
+			for cause in e.chain().skip(1) {
+				eprintln!("  Caused by: {cause}");
+			}
 			return;
 		}
 	};
@@ -168,7 +171,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 		Some(percent) => percent,
 		None => match args.exact_sl {
 			Some(sl) => ((price - sl).abs() / price).into(),
-			None => config.default_sl,
+			None => config.size.default_sl,
 		},
 	};
 	let time = ema_prev_times_for_same_move(&config, exchanges[0].exchange.as_ref(), ticker.symbol, price, sl_percent).await?;
@@ -188,7 +191,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	debug!(?price, ?total_balance, ?hours, ?mul);
 
 	// Apply round bias
-	let biased_size = apply_round_bias(size, config.round_bias);
+	let biased_size = apply_round_bias(size, config.size.round_bias);
 
 	println!("Total Depo: {total_balance}$");
 	println!("Chosen SL range: {sl_percent}");
