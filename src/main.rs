@@ -76,7 +76,7 @@ impl Default for SizeArgs {
 async fn main() {
 	v_utils::clientside!();
 	let cli = Cli::parse();
-	let config = match AppConfig::try_build_with_validation(cli.settings) {
+	let config = match AppConfig::try_build(cli.settings) {
 		Ok(config) => config,
 		Err(e) => {
 			eprintln!("Error reading config: {e}");
@@ -99,10 +99,10 @@ struct InitializedExchange {
 
 fn initialize_exchanges(config: &AppConfig) -> Result<Vec<InitializedExchange>> {
 	let mut exchanges: Vec<InitializedExchange> = Vec::new();
-	for exchange_config in &config.exchanges {
-		let exchange_name = ExchangeName::from_str(&exchange_config.exch_name)?;
+	for (key, exchange_config) in &config.exchanges {
+		let exchange_name = ExchangeName::from_str(key)?;
 		let mut exchange = exchange_name.init_client();
-		exchange.auth(exchange_config.key.clone(), exchange_config.secret.clone());
+		exchange.auth(exchange_config.api_pubkey.clone(), exchange_config.api_secret.clone());
 		exchange.set_max_tries(3);
 		exchange.set_recv_window(std::time::Duration::from_secs(15));
 
@@ -112,13 +112,7 @@ fn initialize_exchanges(config: &AppConfig) -> Result<Vec<InitializedExchange>> 
 			exchange.update_default_option(v_exchanges::kucoin::KucoinOption::Passphrase(passphrase));
 		}
 
-		// Create key: if tag exists, use "exchname_tag", otherwise just "exchname"
-		let key = match &exchange_config.tag {
-			Some(tag) => format!("{}_{}", exchange_config.exch_name, tag),
-			None => exchange_config.exch_name.clone(),
-		};
-
-		exchanges.push(InitializedExchange { exchange, key });
+		exchanges.push(InitializedExchange { exchange, key: key.clone() });
 	}
 	Ok(exchanges)
 }
