@@ -169,7 +169,7 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let total_balance = get_total_balance(&config, &balances).await?;
 
 	// Use the first exchange for price lookup (could be made configurable based on ticker.exchange_name)
-	let price = exchanges[0].exchange.price(ticker.symbol, None).await.unwrap();
+	let price = exchanges[0].exchange.price(ticker.symbol).await.unwrap();
 
 	let sl_percent: Percent = match args.percent_sl {
 		Some(percent) => percent,
@@ -232,7 +232,7 @@ async fn ema_prev_times_for_same_move(bn: &dyn Exchange, symbol: v_exchanges::co
 	let mut approx_correct_tf: Option<Timeframe> = None;
 	for tf in preset_timeframes {
 		if approx_correct_tf.is_none() {
-			let klines = bn.klines(symbol, tf, 1000.into(), None).await.unwrap();
+			let klines = bn.klines(symbol, tf, 1000.into()).await.unwrap();
 			for k in klines.iter().rev() {
 				match check_if_satisfies(k, &mut times, &mut prev_time) {
 					true => {
@@ -249,7 +249,7 @@ async fn ema_prev_times_for_same_move(bn: &dyn Exchange, symbol: v_exchanges::co
 	let mut i = 0;
 	while times.len() < RUN_TIMES && i < 10 {
 		let request_range = (prev_time.checked_sub(tf.duration() * 999).unwrap(), prev_time);
-		let klines = bn.klines(symbol, tf, request_range.into(), None).await.unwrap();
+		let klines = bn.klines(symbol, tf, request_range.into()).await.unwrap();
 		for k in klines.iter().rev() {
 			match check_if_satisfies(k, &mut times, &mut prev_time) {
 				true =>
@@ -311,7 +311,7 @@ fn apply_round_bias(value: f64, bias: PercentU) -> f64 {
 		.unwrap_or(value);
 
 	// Apply bias: move towards the rounder number by the bias percentage
-	value + (closest_round - value) * **bias
+	value + (closest_round - value) * *bias
 }
 
 fn mul_criterion(time: Span) -> f64 {
