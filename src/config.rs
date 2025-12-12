@@ -17,16 +17,8 @@ pub struct SizeConfig {
 	pub default_sl: Percent,
 	#[settings(default = "PercentU::new(0.01).unwrap()")]
 	pub round_bias: PercentU,
-	pub risk_tiers: RiskTiers,
-}
-
-#[derive(Clone, Debug, Default, v_macros::MyConfigPrimitives)]
-pub struct RiskTiers {
-	pub a: Percent,
-	pub b: Percent,
-	pub c: Percent,
-	pub d: Percent,
-	pub e: Percent,
+	/// Max risk for A-quality trades. Each tier below divides by e (2.718...)
+	pub abs_max_risk: Percent,
 }
 
 #[derive(Clone, Debug, v_macros::MyConfigPrimitives)]

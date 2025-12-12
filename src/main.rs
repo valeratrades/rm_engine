@@ -23,8 +23,8 @@ enum Quality {
 	C,
 	/// looks good
 	D,
-	/// random test
-	E,
+	/// random test (uses exchange min size)
+	T,
 }
 
 #[derive(Default, Parser)]
@@ -181,26 +181,42 @@ async fn start(config: AppConfig, args: SizeArgs) -> Result<()> {
 	let time = ema_prev_times_for_same_move(exchanges[0].exchange.as_ref(), ticker.symbol, price, sl_percent).await?;
 
 	let mul = mul_criterion(time);
+
+	// For T quality, we use min size - skip risk calculation
+	let is_test_quality = args.quality == Quality::T;
+
+	// Calculate risk tiers: A = abs_max_risk, then each level divides by e
+	let e = std::f64::consts::E;
 	let quality_risk = match args.quality {
-		Quality::A => size_config.risk_tiers.a,
-		Quality::B => size_config.risk_tiers.b,
-		Quality::C => size_config.risk_tiers.c,
-		Quality::D => size_config.risk_tiers.d,
-		Quality::E => size_config.risk_tiers.e,
+		Quality::A => size_config.abs_max_risk,
+		Quality::B => Percent(*size_config.abs_max_risk / e),
+		Quality::C => Percent(*size_config.abs_max_risk / (e * e)),
+		Quality::D => Percent(*size_config.abs_max_risk / (e * e * e)),
+		Quality::T => Percent(0.0), // Will use min size instead
 	};
 	let target_balance_risk = Percent(*quality_risk * mul);
-	let size = *total_balance * *(target_balance_risk / sl_percent);
+	let size = if is_test_quality {
+		// For T quality, we'll print "min" instead of calculated size
+		0.0
+	} else {
+		*total_balance * *(target_balance_risk / sl_percent)
+	};
 
 	let hours = (time.total(Unit::Second).unwrap() as i64 / 3600) as f64;
 	debug!(?price, ?total_balance, ?hours, ?mul);
 
-	// Apply round bias
-	let biased_size = apply_round_bias(size, size_config.round_bias);
-
 	println!("Total Depo: {total_balance}$");
 	println!("Chosen SL range: {sl_percent}");
-	println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
-	println!("\nSize: {biased_size:.2}");
+
+	if is_test_quality {
+		println!("Target Risk: N/A (test quality)");
+		println!("\nSize: min");
+	} else {
+		// Apply round bias
+		let biased_size = apply_round_bias(size, size_config.round_bias);
+		println!("Target Risk: {target_balance_risk} of depo ({})", total_balance * *target_balance_risk);
+		println!("\nSize: {biased_size:.2}");
+	}
 	Ok(())
 }
 
